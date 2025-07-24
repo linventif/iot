@@ -160,7 +160,7 @@ void setupWebSocket() {
   webSocket.onMessage(onMessageCallback);
   webSocket.onEvent(onEventsCallback);
   
-  Serial.printf("Connexion WebSocket à: %s\n", CONFIG_WS_HOST.c_str());
+  Serial.printf("Connexion WebSocket à: %s\n", CONFIG_WS_HOST);
   
   // Connexion WebSocket
   bool connected = webSocket.connect(CONFIG_WS_HOST);
