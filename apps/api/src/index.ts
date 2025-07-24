@@ -1,9 +1,9 @@
 import { Elysia } from 'elysia';
 
-const app = new Elysia()
-	// Serve test client at /test for easy access
-	.get('/test', () => Bun.file('src/test-client.html'))
+const port = process.env.PORT || 4001;
+console.log(`port: ${port}`);
 
+new Elysia()
 	// REST API Hello World endpoint
 	.get('/api/hello', () => {
 		return {
@@ -12,9 +12,8 @@ const app = new Elysia()
 			status: 'success',
 		};
 	})
-
 	// WebSocket Hello World endpoint
-	.ws('/ws', {
+	.ws('/api/ws', {
 		message(ws, message) {
 			console.log('Received message:', message);
 
@@ -42,35 +41,22 @@ const app = new Elysia()
 			console.log('WebSocket connection closed');
 		},
 	})
-
 	// Health check endpoint
-	.get('/health', () => {
+	.get('/api/health', () => {
 		return {
 			status: 'healthy',
 			timestamp: new Date().toISOString(),
 		};
 	})
-
-	// Root endpoint
-	.get('/', () => {
+	// Root endpoint (the /api is bc of cloudflare)
+	.get('/api/', () => {
 		return {
 			message: 'Auto Pool Pump API Server',
 			endpoints: {
-				rest: '/api/hello',
+				rest: '/hello',
 				websocket: '/ws',
 				health: '/health',
-				testClient: '/test',
 			},
 		};
-	});
-
-const port = process.env.PORT || 4001;
-
-app.listen(port, () => {
-	console.log(`🚀 Elysia server is running on http://localhost:${port}`);
-	console.log(`📡 REST API: http://localhost:${port}/api/hello`);
-	console.log(`🔌 WebSocket: ws://localhost:${port}/ws`);
-	console.log(`🧪 Test Client: http://localhost:${port}/test`);
-});
-
-export default app;
+	})
+	.listen(port);
