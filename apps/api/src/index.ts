@@ -1,6 +1,6 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
-import { insertSensorData } from '../../../src/db/index';
+import { insertSensorData, getSensorReadings } from '../../../src/db/index';
 import 'dotenv/config';
 
 const port = process.env.PORT || 4001;
@@ -73,6 +73,43 @@ new Elysia()
 		close(ws: any) {
 			console.log('WebSocket connection closed');
 		},
+	})
+	// Get latest sensor data
+	.get('/api/sensors/latest', async () => {
+		try {
+			const readings = await getSensorReadings(undefined, 1);
+			return {
+				success: true,
+				data: readings[0] || null,
+				timestamp: new Date().toISOString(),
+			};
+		} catch (error) {
+			return {
+				success: false,
+				error: 'Failed to fetch sensor data',
+				timestamp: new Date().toISOString(),
+			};
+		}
+	})
+	// Get sensor history
+	.get('/api/sensors/history', async ({ query }) => {
+		try {
+			const limit = parseInt(query.limit as string) || 100;
+			const deviceId = query.deviceId as string;
+			const readings = await getSensorReadings(deviceId, limit);
+			return {
+				success: true,
+				data: readings,
+				count: readings.length,
+				timestamp: new Date().toISOString(),
+			};
+		} catch (error) {
+			return {
+				success: false,
+				error: 'Failed to fetch sensor history',
+				timestamp: new Date().toISOString(),
+			};
+		}
 	})
 	// Health check endpoint
 	.get('/api/health', () => {

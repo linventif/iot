@@ -6,7 +6,7 @@ export default defineConfig({
 	plugins: [solidPlugin(), tailwindcss()],
 	server: {
 		port: 4000,
-		allowedHosts: ['localhost', 'iot.linv.dev'],
+		allowedHosts: ['localhost', 'iot.linv.dev', 'iot-dev.linv.dev'],
 	},
 	build: {
 		target: 'esnext',

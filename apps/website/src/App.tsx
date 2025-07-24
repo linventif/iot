@@ -5,6 +5,7 @@ import { render } from 'solid-js/web';
 import Home from './pages/Home';
 import ApiTest from './pages/ApiTest';
 import NotFound from './pages/NotFound';
+import PoolDashboard from './components/PoolDashboard';
 
 async function loadFlyonUI() {
 	return import('flyonui/flyonui');
@@ -35,7 +36,8 @@ const App = (props: AppProps) => {
 	});
 
 	return (
-		<div class='min-h-screen flex justify-center'>
+		<div class='min-h-screen bg-base-200'>
+			<PoolDashboard />
 			<div class='p-6'>{props.children}</div>
 		</div>
 	);
