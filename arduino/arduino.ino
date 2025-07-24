@@ -160,17 +160,10 @@ void setupWebSocket() {
   webSocket.onMessage(onMessageCallback);
   webSocket.onEvent(onEventsCallback);
   
-  // Construction de l'URL WebSocket
-  String wsUrl = "ws://";
-  wsUrl += CONFIG_WS_HOST;
-  wsUrl += ":";
-  wsUrl += CONFIG_WS_PORT;
-  wsUrl += CONFIG_WS_PATH;
-  
-  Serial.printf("Connexion WebSocket à: %s\n", wsUrl.c_str());
+  Serial.printf("Connexion WebSocket à: %s\n", CONFIG_WS_HOST.c_str());
   
   // Connexion WebSocket
-  bool connected = webSocket.connect(wsUrl);
+  bool connected = webSocket.connect(CONFIG_WS_HOST);
   if(connected) {
     Serial.println("WebSocket configuré avec succès");
   } else {

@@ -6,9 +6,7 @@
 #define CONFIG_WIFI_PASSWORD "VotreMotDePasseWiFi"
 
 // Configuration WebSocket
-#define CONFIG_WS_HOST "votre-serveur.com"
-#define CONFIG_WS_PORT 4000
-#define CONFIG_WS_PATH "/api/ws"
+#define CONFIG_WS_HOST "wss://votre-serveur.com:4000/api/ws"
 #define CONFIG_DEVICE_ID "arduino-pool-monitor-001"
 
 // Configuration des pins
