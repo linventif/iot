@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// Configuration WiFi
+// Configuration WiFi (alpha-numeric characters only)
 #define CONFIG_WIFI_SSID "VotreNomWiFi"
 #define CONFIG_WIFI_PASSWORD "VotreMotDePasseWiFi"
 
