@@ -15,14 +15,26 @@
 		"lint": "turbo lint",
 		"type-check": "turbo type-check",
 		"clean": "turbo clean && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
-		"simulate": "bun run simulate-esp32.ts"
+		"simulate": "bun run simulate-esp32.ts",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio",
+		"db:push": "drizzle-kit push"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
 		"turbo": "^2.5.5",
-		"typescript": "^5.8.3"
+		"typescript": "^5.8.3",
+		"drizzle-kit": "^0.30.0"
 	},
 	"dependencies": {
-		"dotenv": "^17.2.0"
+		"dotenv": "^17.2.0",
+		"drizzle-orm": "^0.44.3",
+		"drizzle-typebox": "^0.3.3",
+		"@libsql/client": "^0.14.0",
+		"mysql2": "^3.11.4"
+	},
+	"overrides": {
+		"@sinclair/typebox": "0.34.33"
 	}
 }

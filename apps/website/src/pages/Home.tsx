@@ -89,5 +89,7 @@ const Card = () => {
 		</div>
 	);
 };
-
+/*
+change the home page to be a modern dashboard, for now the only panel il the Pool with a bref display of the temp ad on/off when click go to a new page dedicaced to the pool setting (manual on/off, schedule, chard of the temp in/out, diff to trigger)ect
+*/
 export default Card;
