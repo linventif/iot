@@ -1,5 +1,7 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
+import { insertSensorData } from '../../../src/db/index';
+import 'dotenv/config';
 
 const port = process.env.PORT || 4001;
 console.log(`port: ${port}`);
@@ -23,8 +25,30 @@ new Elysia()
 	})
 	// WebSocket Hello World endpoint
 	.ws('/api/ws', {
-		message(ws: any, message: any) {
+		async message(ws: any, message: any) {
 			console.log('Received message:', message);
+
+			try {
+				const data =
+					typeof message === 'string' ? JSON.parse(message) : message;
+
+				// Save sensor data to database
+				if (data.type === 'sensor_data') {
+					await insertSensorData({
+						deviceId: data.deviceId,
+						tempPool: data.tempPool,
+						tempOutdoor: data.tempOutdoor,
+						relayState: data.relayState,
+						wifiSignal: data.wifiSignal,
+						freeHeap: data.freeHeap,
+						uptime: data.uptime,
+						deviceTimestamp: data.timestamp,
+					});
+					console.log('✅ Sensor data saved to database');
+				}
+			} catch (error) {
+				console.error('❌ Error processing sensor data:', error);
+			}
 
 			// Send hello world response back to client
 			ws.send({

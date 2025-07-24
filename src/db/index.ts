@@ -1,32 +1,44 @@
-import { drizzle } from 'drizzle-orm/libsql';
-import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
 import { sensors, type NewSensor } from './schema';
+import { eq, desc } from 'drizzle-orm';
 
-const client = createClient({
-	url: process.env.DATABASE_URL || 'file:./database.db',
+const connection = await mysql.createConnection({
+	host: process.env.DB_HOST || 'localhost',
+	port: Number(process.env.DB_PORT) || 3306,
+	user: process.env.MYSQL_USER || 'pooluser',
+	password: process.env.MYSQL_PASSWORD || 'poolpassword',
+	database: process.env.MYSQL_DATABASE || 'auto_pool_pump',
 });
 
-export const db = drizzle(client);
+export const db = drizzle(connection);
 
-export const insertSensorReading = async (
-	data: Omit<NewSensor, 'id' | 'timestamp' | 'createdAt'>
-) => {
-	return await db.insert(sensors).values(data).returning();
+export const insertSensorData = async (data: {
+	deviceId: string;
+	tempPool: number;
+	tempOutdoor: number;
+	relayState: boolean;
+	wifiSignal: number;
+	freeHeap: number;
+	uptime: number;
+	deviceTimestamp: number;
+}) => {
+	return await db.insert(sensors).values(data);
 };
 
-export const getSensorReadings = async (sensorId?: string, limit = 100) => {
-	if (sensorId) {
+export const getSensorReadings = async (deviceId?: string, limit = 100) => {
+	if (deviceId) {
 		return await db
 			.select()
 			.from(sensors)
-			.where(eq(sensors.sensorId, sensorId))
-			.orderBy(desc(sensors.timestamp))
+			.where(eq(sensors.deviceId, deviceId))
+			.orderBy(desc(sensors.createdAt))
 			.limit(limit);
 	}
 	return await db
 		.select()
 		.from(sensors)
-		.orderBy(desc(sensors.timestamp))
+		.orderBy(desc(sensors.createdAt))
 		.limit(limit);
 };
 

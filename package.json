@@ -25,14 +25,14 @@
 		"@types/bun": "latest",
 		"turbo": "^2.5.5",
 		"typescript": "^5.8.3",
-		"drizzle-kit": "^0.30.0"
+		"drizzle-kit": "^0.30.6"
 	},
 	"dependencies": {
 		"dotenv": "^17.2.0",
 		"drizzle-orm": "^0.44.3",
 		"drizzle-typebox": "^0.3.3",
 		"@libsql/client": "^0.14.0",
-		"mysql2": "^3.11.4"
+		"mysql2": "^3.14.2"
 	},
 	"overrides": {
 		"@sinclair/typebox": "0.34.33"
