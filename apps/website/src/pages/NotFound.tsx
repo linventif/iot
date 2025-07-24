@@ -1,3 +1,4 @@
+import { A } from '@solidjs/router';
 import { Component } from 'solid-js';
 
 const NotFound: Component = () => {
@@ -68,7 +69,7 @@ const NotFound: Component = () => {
 							<p class='text-base-content/60 mb-4'>
 								Return to the main dashboard
 							</p>
-							<a href='/' class='btn btn-primary'>
+							<A href='/' class='btn btn-primary'>
 								<svg
 									class='w-4 h-4'
 									fill='currentColor'
@@ -81,7 +82,7 @@ const NotFound: Component = () => {
 									/>
 								</svg>
 								Take Me Home
-							</a>
+							</A>
 						</div>
 					</div>
 
@@ -102,7 +103,7 @@ const NotFound: Component = () => {
 							<p class='text-base-content/60 mb-4'>
 								Try our API testing dashboard
 							</p>
-							<a href='/api-test' class='btn btn-secondary'>
+							<A href='/test' class='btn btn-secondary'>
 								<svg
 									class='w-4 h-4'
 									fill='currentColor'
@@ -111,7 +112,7 @@ const NotFound: Component = () => {
 									<path d='M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z' />
 								</svg>
 								Start Testing
-							</a>
+							</A>
 						</div>
 					</div>
 				</div>

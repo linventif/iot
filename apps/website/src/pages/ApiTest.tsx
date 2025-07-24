@@ -152,7 +152,7 @@ const ApiTest: Component = () => {
 		}
 
 		setIsConnecting(true);
-		const wsUrl = 'ws://localhost:4001/ws';
+		const wsUrl = 'ws://localhost:4001/api/ws';
 
 		const newWs = new WebSocket(wsUrl);
 		const connectTime = Date.now();
@@ -369,7 +369,7 @@ const ApiTest: Component = () => {
 									class='btn btn-success btn-lg group hover:scale-105 transition-transform'
 									onClick={() =>
 										testEndpoint(
-											'/health',
+											'/api/health',
 											'GET',
 											'Health Check'
 										)
@@ -401,7 +401,7 @@ const ApiTest: Component = () => {
 									class='btn btn-accent btn-lg group hover:scale-105 transition-transform'
 									onClick={() =>
 										testEndpoint(
-											'/',
+											'/api/',
 											'GET',
 											'Root Endpoint'
 										)

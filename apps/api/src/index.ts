@@ -1,9 +1,18 @@
 import { Elysia } from 'elysia';
+import { cors } from '@elysiajs/cors';
 
 const port = process.env.PORT || 4001;
 console.log(`port: ${port}`);
 
 new Elysia()
+	.use(
+		cors({
+			origin: true, // Allow all origins for development
+			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+			allowedHeaders: ['Content-Type', 'Authorization'],
+			credentials: true,
+		})
+	)
 	// REST API Hello World endpoint
 	.get('/api/hello', () => {
 		return {
@@ -14,7 +23,7 @@ new Elysia()
 	})
 	// WebSocket Hello World endpoint
 	.ws('/api/ws', {
-		message(ws, message) {
+		message(ws: any, message: any) {
 			console.log('Received message:', message);
 
 			// Send hello world response back to client
@@ -26,7 +35,7 @@ new Elysia()
 			});
 		},
 
-		open(ws) {
+		open(ws: any) {
 			console.log('WebSocket connection opened');
 
 			// Send welcome message when client connects
@@ -37,7 +46,7 @@ new Elysia()
 			});
 		},
 
-		close(ws) {
+		close(ws: any) {
 			console.log('WebSocket connection closed');
 		},
 	})
@@ -53,10 +62,18 @@ new Elysia()
 		return {
 			message: 'Auto Pool Pump API Server',
 			endpoints: {
-				rest: '/hello',
-				websocket: '/ws',
-				health: '/health',
+				rest: '/api/hello',
+				websocket: '/api/ws',
+				health: '/api/health',
 			},
 		};
 	})
-	.listen(port);
+	.listen(port, () => {
+		console.log(
+			`🚀 Elysia API server is running on http://localhost:${port}`
+		);
+		console.log(`📡 REST API: http://localhost:${port}/api/hello`);
+		console.log(`🔌 WebSocket: ws://localhost:${port}/api/ws`);
+		console.log(`🩺 Health Check: http://localhost:${port}/api/health`);
+		console.log(`📋 API Info: http://localhost:${port}/api/`);
+	});

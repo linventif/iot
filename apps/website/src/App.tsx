@@ -1,5 +1,5 @@
-import { Route, Router, useLocation } from '@solidjs/router';
-import { createEffect, createSignal, JSX } from 'solid-js';
+import { Route, Router } from '@solidjs/router';
+import { createEffect, JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 
 import Home from './pages/Home';
@@ -15,9 +15,6 @@ interface AppProps {
 }
 
 const App = (props: AppProps) => {
-	const location = useLocation();
-	const [_, setLoc] = createSignal(location.pathname);
-
 	createEffect(() => {
 		const initFlyonUI = async () => {
 			await loadFlyonUI();
@@ -27,8 +24,6 @@ const App = (props: AppProps) => {
 	});
 
 	createEffect(() => {
-		setLoc(location.pathname);
-
 		setTimeout(() => {
 			if (
 				window.HSStaticMethods &&
@@ -50,7 +45,7 @@ render(
 	() => (
 		<Router root={App}>
 			<Route path='/' component={Home} />
-			<Route path='/api-test' component={ApiTest} />
+			<Route path='/test' component={ApiTest} />
 			<Route path='*404' component={NotFound} />
 		</Router>
 	),
