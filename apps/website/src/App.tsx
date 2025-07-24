@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import ApiTest from './pages/ApiTest';
 import NotFound from './pages/NotFound';
 import PoolDashboard from './components/PoolDashboard';
+import Footer from './components/Footer';
 
 async function loadFlyonUI() {
 	return import('flyonui/flyonui');
@@ -36,9 +37,9 @@ const App = (props: AppProps) => {
 	});
 
 	return (
-		<div class='min-h-screen bg-base-200'>
-			<PoolDashboard />
-			<div class='p-6'>{props.children}</div>
+		<div class='min-h-screen bg-base-200 flex flex-col'>
+			<div class='flex-1 p-6'>{props.children}</div>
+			<Footer />
 		</div>
 	);
 };
@@ -47,6 +48,7 @@ render(
 	() => (
 		<Router root={App}>
 			<Route path='/' component={Home} />
+			<Route path='/monitor/pool' component={PoolDashboard} />
 			<Route path='/test' component={ApiTest} />
 			<Route path='*404' component={NotFound} />
 		</Router>
