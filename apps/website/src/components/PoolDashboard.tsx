@@ -17,6 +17,8 @@ export default function PoolDashboard() {
 	const [sensorData, setSensorData] = createSignal<SensorData | null>(null);
 	const [loading, setLoading] = createSignal(true);
 	const [lastUpdate, setLastUpdate] = createSignal<string>('');
+	const [connected, setConnected] = createSignal(false);
+	let ws: WebSocket | null = null;
 
 	const fetchLatestData = async () => {
 		try {
@@ -33,10 +35,49 @@ export default function PoolDashboard() {
 		}
 	};
 
+	const connectWebSocket = () => {
+		const wsUrl = `ws://${window.location.hostname}:4001/api/ws`;
+		ws = new WebSocket(wsUrl);
+
+		ws.onopen = () => {
+			setConnected(true);
+			// Register as website client
+			ws?.send(
+				JSON.stringify({ type: 'register', clientType: 'website' })
+			);
+		};
+
+		ws.onmessage = (event) => {
+			try {
+				const data = JSON.parse(event.data);
+				if (data.type === 'sensor_data') {
+					setSensorData(data);
+					setLastUpdate(new Date().toLocaleTimeString());
+					setLoading(false);
+				}
+			} catch (error) {
+				console.error('Error parsing WebSocket message:', error);
+			}
+		};
+
+		ws.onclose = () => {
+			setConnected(false);
+			setTimeout(connectWebSocket, 3000);
+		};
+
+		ws.onerror = () => {
+			setConnected(false);
+		};
+	};
+
 	onMount(() => {
+		connectWebSocket();
 		fetchLatestData();
-		const interval = setInterval(fetchLatestData, 5000); // Update every 5 seconds
-		onCleanup(() => clearInterval(interval));
+		const interval = setInterval(fetchLatestData, 15000); // fallback poll every 15s
+		onCleanup(() => {
+			clearInterval(interval);
+			if (ws) ws.close();
+		});
 	});
 
 	return (
@@ -49,11 +90,18 @@ export default function PoolDashboard() {
 				<p class='text-base-content/70'>
 					Real-time pool monitoring system
 				</p>
-				{lastUpdate() && (
-					<p class='text-sm text-base-content/50 mt-2'>
-						Last updated: {lastUpdate()}
-					</p>
-				)}
+				<div class='flex justify-center items-center gap-2 mt-2'>
+					<div
+						class={`badge ${connected() ? 'badge-success' : 'badge-error'}`}
+					>
+						{connected() ? '🟢 Connected' : '🔴 Disconnected'}
+					</div>
+					{lastUpdate() && (
+						<p class='text-sm text-base-content/50 mt-0'>
+							Last updated: {lastUpdate()}
+						</p>
+					)}
+				</div>
 			</div>
 
 			{loading() ? (
@@ -71,7 +119,12 @@ export default function PoolDashboard() {
 									🌊 Pool Temperature
 								</h2>
 								<div class='text-5xl font-bold'>
-									{sensorData()?.tempPool || '--'}°C
+									{sensorData()?.tempPool
+										? parseFloat(
+												sensorData()!.tempPool
+											).toFixed(1)
+										: '--'}
+									°C
 								</div>
 								<p class='opacity-80'>
 									Current pool water temperature
@@ -86,7 +139,12 @@ export default function PoolDashboard() {
 									🌡️ Outdoor Temperature
 								</h2>
 								<div class='text-5xl font-bold'>
-									{sensorData()?.tempOutdoor || '--'}°C
+									{sensorData()?.tempOutdoor
+										? parseFloat(
+												sensorData()!.tempOutdoor
+											).toFixed(1)
+										: '--'}
+									°C
 								</div>
 								<p class='opacity-80'>
 									Ambient air temperature
@@ -124,7 +182,12 @@ export default function PoolDashboard() {
 								<h2 class='card-title'>📶 WiFi Signal</h2>
 								<div class='flex items-center space-x-3'>
 									<div class='text-2xl font-bold'>
-										{sensorData()?.wifiSignal || '--'} dBm
+										{sensorData()?.wifiSignal !== undefined
+											? Number(
+													sensorData()!.wifiSignal
+												).toFixed(1)
+											: '--'}{' '}
+										dBm
 									</div>
 									<div
 										class={`badge ${
@@ -156,19 +219,28 @@ export default function PoolDashboard() {
 									<div class='flex justify-between'>
 										<span>Uptime:</span>
 										<span class='font-mono'>
-											{Math.floor(
-												(sensorData()?.uptime || 0) / 60
-											)}
+											{sensorData()?.uptime !== undefined
+												? (
+														Number(
+															sensorData()!.uptime
+														) / 60
+													).toFixed(1)
+												: '0'}
 											m
 										</span>
 									</div>
 									<div class='flex justify-between'>
 										<span>Free Heap:</span>
 										<span class='font-mono'>
-											{Math.round(
-												(sensorData()?.freeHeap || 0) /
-													1024
-											)}
+											{sensorData()?.freeHeap !==
+											undefined
+												? (
+														Number(
+															sensorData()!
+																.freeHeap
+														) / 1024
+													).toFixed(1)
+												: '0'}
 											KB
 										</span>
 									</div>

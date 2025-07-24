@@ -6,6 +6,9 @@ import 'dotenv/config';
 const port = process.env.PORT || 4001;
 console.log(`port: ${port}`);
 
+// Track connected clients and their type
+const wsClients = new Map<any, { type: string }>();
+
 new Elysia()
 	.use(
 		cors({
@@ -32,6 +35,13 @@ new Elysia()
 				const data =
 					typeof message === 'string' ? JSON.parse(message) : message;
 
+				// Register client type
+				if (data.type === 'register' && data.clientType) {
+					wsClients.set(ws, { type: data.clientType });
+					console.log(`Registered ws client as: ${data.clientType}`);
+					return;
+				}
+
 				// Save sensor data to database
 				if (data.type === 'sensor_data') {
 					await insertSensorData({
@@ -45,6 +55,24 @@ new Elysia()
 						deviceTimestamp: data.timestamp,
 					});
 					console.log('✅ Sensor data saved to database');
+					// Send to all website clients
+					for (const [client, info] of wsClients.entries()) {
+						if (info.type === 'website') {
+							try {
+								client.send(
+									JSON.stringify({
+										type: 'sensor_data',
+										...data,
+									})
+								);
+							} catch (e) {
+								console.error(
+									'Failed to send to website client:',
+									e
+								);
+							}
+						}
+					}
 				}
 			} catch (error) {
 				console.error('❌ Error processing sensor data:', error);
@@ -59,8 +87,9 @@ new Elysia()
 			});
 		},
 
-		open(ws: any) {
+		async open(ws: any) {
 			console.log('WebSocket connection opened');
+			wsClients.set(ws, { type: 'unknown' });
 
 			// Send welcome message when client connects
 			ws.send({
@@ -68,10 +97,24 @@ new Elysia()
 				message: 'Hello World! WebSocket connection established.',
 				timestamp: new Date().toISOString(),
 			});
+
+			// Fetch and send latest sensor data from DB
+			try {
+				const readings = await getSensorReadings(undefined, 1);
+				if (readings[0]) {
+					ws.send({
+						type: 'sensor_data',
+						...readings[0],
+					});
+				}
+			} catch (error) {
+				console.error('❌ Error sending latest sensor data:', error);
+			}
 		},
 
 		close(ws: any) {
 			console.log('WebSocket connection closed');
+			wsClients.delete(ws);
 		},
 	})
 	// Get latest sensor data
