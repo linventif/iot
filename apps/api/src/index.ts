@@ -184,7 +184,7 @@ new Elysia()
 				return { success: false, error: 'Missing setting, value, or type' };
 			}
 			await upsertSensorSetting({
-				sensorId: params.sensorId,
+				deviceId: params.sensorId,
 				setting,
 				value,
 				type,
