@@ -18,11 +18,13 @@ void initSensors() {
 float readPoolTemperature() {
   sensorsPool.requestTemperatures();
   float t = sensorsPool.getTempCByIndex(0);
+  Serial.printf("[SENSOR] Pool temp: %0.1f°C\n", t);
   return (t == DEVICE_DISCONNECTED_C) ? -999.0 : t;
 }
 
 float readOutdoorTemperature() {
   sensorsOutdoor.requestTemperatures();
   float t = sensorsOutdoor.getTempCByIndex(0);
+  Serial.printf("[SENSOR] Outdoor temp: %0.1f°C\n", t);
   return (t == DEVICE_DISCONNECTED_C) ? -999.0 : t;
 }
