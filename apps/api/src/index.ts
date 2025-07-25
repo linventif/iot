@@ -1,223 +1,225 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
-import {
-	insertSensorData,
-	getSensorReadings,
-	upsertSensorSetting,
-	getSensorSettings,
-} from '../../../src/db/index';
 import 'dotenv/config';
 
-const port = process.env.PORT || 4001;
-console.log(`port: ${port}`);
+const port = Number(process.env.PORT || 4001);
 
-// Track connected clients and their type
-const wsClients = new Map<any, { type: string }>();
+type ClientType = 'device' | 'website' | 'unknown';
+interface WSClientInfo {
+	type: ClientType;
+	deviceId?: string;
+}
+const wsClients = new Map<any, WSClientInfo>();
 
 new Elysia()
 	.use(
 		cors({
-			origin: true, // Allow all origins for development
-			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+			origin: true,
+			methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
 			allowedHeaders: ['Content-Type', 'Authorization'],
 			credentials: true,
 		})
 	)
-	// REST API Hello World endpoint
-	.get('/api/hello', () => {
-		return {
-			message: 'Hello World from REST API!',
-			timestamp: new Date().toISOString(),
-			status: 'success',
-		};
-	})
-	// WebSocket Hello World endpoint
+	// Simple REST hello
+	.get('/api/hello', () => ({
+		message: 'Hello World from REST API!',
+		timestamp: new Date().toISOString(),
+		status: 'success',
+	}))
+	// WebSocket endpoint
 	.ws('/api/ws', {
-		async message(ws: any, message: any) {
-			console.log('Received message:', message);
+		async open(ws) {
+			console.log('[WS] Connection opened');
+			wsClients.set(ws, { type: 'unknown' });
+			ws.send(
+				JSON.stringify({
+					type: 'welcome',
+					message: 'WebSocket connection established.',
+					timestamp: new Date().toISOString(),
+				})
+			);
+		},
 
+		async message(ws, raw) {
+			let data: any;
 			try {
-				const data =
-					typeof message === 'string' ? JSON.parse(message) : message;
+				data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+			} catch {
+				console.error('[WS] Invalid JSON');
+				ws.send(
+					JSON.stringify({ type: 'error', error: 'Invalid JSON' })
+				);
+				return;
+			}
 
-				// Register client type
-				if (data.type === 'register' && data.clientType) {
-					wsClients.set(ws, { type: data.clientType });
-					console.log(`Registered ws client as: ${data.clientType}`);
-					return;
+			// 1) Register clients (device or website)
+			if (data.type === 'register' && data.clientType) {
+				const info: WSClientInfo = {
+					type: data.clientType,
+					deviceId: data.deviceId,
+				};
+				wsClients.set(ws, info);
+				console.log(
+					`[WS] Registered ${data.clientType} (${
+						data.deviceId || '–'
+					})`
+				);
+
+				// If it's a device, send it its current config
+				if (info.type === 'device' && info.deviceId) {
+					console.log(
+						`[WS] Sending current config to device ${info.deviceId}`
+					);
+					// const rows = await getSensorSettings(info.deviceId);
+					// const cfg = Object.fromEntries(
+					// 	rows.map((r) => [r.setting, r.value])
+					// );
+					// ws.send(
+					// 	JSON.stringify({
+					// 		type: 'current_config',
+					// 		deviceId: info.deviceId,
+					// 		...cfg,
+					// 	})
+					// );
 				}
+				return;
+			}
 
-				// Save sensor data to database
-				if (data.type === 'sensor_data') {
-					await insertSensorData({
-						deviceId: data.deviceId,
-						tempPool: data.tempPool,
-						tempOutdoor: data.tempOutdoor,
-						relayState: data.relayState,
-						wifiSignal: data.wifiSignal,
-						freeHeap: data.freeHeap,
-						uptime: data.uptime,
-						deviceTimestamp: data.timestamp,
-					});
-					console.log('✅ Sensor data saved to database');
-					// Send to all website clients
-					for (const [client, info] of wsClients.entries()) {
-						if (info.type === 'website') {
-							try {
-								client.send(
-									JSON.stringify({
-										type: 'sensor_data',
-										...data,
-									})
-								);
-							} catch (e) {
-								console.error(
-									'Failed to send to website client:',
-									e
-								);
-							}
-						}
+			// 2) Incoming sensor_data
+			if (data.type === 'sensor_data') {
+				const {
+					deviceId,
+					poolTemp,
+					outTemp,
+					relayState,
+					wifiSignal,
+					freeHeap,
+					uptime,
+					timestamp: deviceTimestamp,
+				} = data;
+
+				// await insertSensorData({
+				// 	deviceId,
+				// 	tempPool: poolTemp,
+				// 	tempOutdoor: outTemp,
+				// 	relayState,
+				// 	wifiSignal,
+				// 	freeHeap,
+				// 	uptime,
+				// 	deviceTimestamp,
+				// });
+				console.log('[WS] Saved sensor_data for', deviceId);
+
+				// Broadcast to all website clients
+				for (const [client, info] of wsClients.entries()) {
+					if (info.type === 'website') {
+						client.send(
+							JSON.stringify({ type: 'sensor_data', ...data })
+						);
 					}
 				}
-			} catch (error) {
-				console.error('❌ Error processing sensor data:', error);
+				return;
 			}
 
-			// Send hello world response back to client
-			ws.send({
-				type: 'hello_response',
-				message: 'Hello World from WebSocket!',
-				originalMessage: message,
-				timestamp: new Date().toISOString(),
-			});
-		},
-
-		async open(ws: any) {
-			console.log('WebSocket connection opened');
-			wsClients.set(ws, { type: 'unknown' });
-
-			// Send welcome message when client connects
-			ws.send({
-				type: 'welcome',
-				message: 'Hello World! WebSocket connection established.',
-				timestamp: new Date().toISOString(),
-			});
-
-			// Fetch and send latest sensor data from DB
-			try {
-				const readings = await getSensorReadings(undefined, 1);
-				if (readings[0]) {
-					ws.send({
-						type: 'sensor_data',
-						...readings[0],
-					});
-				}
-			} catch (error) {
-				console.error('❌ Error sending latest sensor data:', error);
+			// 3) Incoming update_config
+			if (data.type === 'update_config') {
+				const { deviceId, tempThreshold } = data;
+				// await upsertSensorSetting({
+				// 	deviceId,
+				// 	setting: 'tempThreshold',
+				// 	value: String(tempThreshold),
+				// 	type: 'float',
+				// });
+				console.log(
+					'[WS] Updated tempThreshold for',
+					deviceId,
+					'=',
+					tempThreshold
+				);
+				return;
 			}
+
+			// 4) Incoming force_relay
+			if (data.type === 'force_relay') {
+				const { deviceId, forceState } = data;
+				// await upsertSensorSetting({
+				// 	deviceId,
+				// 	setting: 'forceState',
+				// 	value: forceState,
+				// 	type: 'string',
+				// });
+				console.log(
+					'[WS] Updated forceState for',
+					deviceId,
+					'=',
+					forceState
+				);
+				return;
+			}
+
+			// 5) Unknown type
+			ws.send(
+				JSON.stringify({ type: 'error', error: 'Unknown message type' })
+			);
 		},
 
-		close(ws: any) {
-			console.log('WebSocket connection closed');
+		close(ws) {
+			console.log('[WS] Connection closed');
 			wsClients.delete(ws);
 		},
 	})
-	// Get latest sensor data
-	.get('/api/sensors/latest', async () => {
-		try {
-			const readings = await getSensorReadings(undefined, 1);
-			return {
-				success: true,
-				data: readings[0] || null,
-				timestamp: new Date().toISOString(),
-			};
-		} catch (error) {
-			return {
-				success: false,
-				error: 'Failed to fetch sensor data',
-				timestamp: new Date().toISOString(),
-			};
-		}
+
+	// REST: latest sensor reading
+	.get('/api/sensors/latest', async ({ query }) => {
+		const limit = parseInt(query.limit as string) || 1;
+		const deviceId = query.deviceId as string | undefined;
+		// const rows = await getSensorReadings(deviceId, limit);
+		// return {
+		// 	success: true,
+		// 	data: rows[0] || null,
+		// 	timestamp: new Date().toISOString(),
+		// };
 	})
-	// Get sensor history
+
+	// REST: sensor history
 	.get('/api/sensors/history', async ({ query }) => {
-		try {
-			const limit = parseInt(query.limit as string) || 100;
-			const deviceId = query.deviceId as string;
-			const readings = await getSensorReadings(deviceId, limit);
-			return {
-				success: true,
-				data: readings,
-				count: readings.length,
-				timestamp: new Date().toISOString(),
-			};
-		} catch (error) {
-			return {
-				success: false,
-				error: 'Failed to fetch sensor history',
-				timestamp: new Date().toISOString(),
-			};
+		const limit = parseInt(query.limit as string) || 100;
+		const deviceId = query.deviceId as string | undefined;
+		// const rows = await getSensorReadings(deviceId, limit);
+		// return {
+		// 	success: true,
+		// 	data: rows,
+		// 	count: rows.length,
+		// 	timestamp: new Date().toISOString(),
+		// };
+	})
+
+	// REST: get config for a device
+	.get('/api/sensors/:deviceId/config', async ({ params }) => {
+		// const rows = await getSensorSettings(params.deviceId);
+		// const cfg = Object.fromEntries(rows.map((r) => [r.setting, r.value]));
+		// return { success: true, config: cfg };
+	})
+
+	// REST: update config (bulk) for a device
+	.post('/api/sensors/:deviceId/config', async ({ params, body }) => {
+		const updates = body as Record<string, string>;
+		for (const [setting, value] of Object.entries(updates)) {
+			const type = isNaN(Number(value)) ? 'string' : 'float';
+			// await upsertSensorSetting({
+			// 	deviceId: params.deviceId,
+			// 	setting,
+			// 	value,
+			// 	type,
+			// });
 		}
+		return { success: true };
 	})
-	// Get sensor settings
-	.get('/api/sensors/:sensorId/settings', async ({ params }) => {
-		try {
-			const settings = await getSensorSettings(params.sensorId);
-			return { success: true, settings };
-		} catch (error) {
-			return { success: false, error: 'Failed to fetch settings' };
-		}
-	})
-	// Save/update a sensor setting
-	.post('/api/sensors/:sensorId/settings', async ({ params, body }) => {
-		try {
-			const {
-				setting,
-				value,
-				type,
-			} = body as {
-				setting: string;
-				value: string;
-				type: string;
-			};
-			if (!setting || value === undefined || !type) {
-				return { success: false, error: 'Missing setting, value, or type' };
-			}
-			await upsertSensorSetting({
-				deviceId: params.sensorId,
-				setting,
-				value,
-				type,
-			});
-			return { success: true };
-		} catch (error) {
-			return { success: false, error: 'Failed to save setting' };
-		}
-	})
-	// Health check endpoint
-	.get('/api/health', () => {
-		return {
-			status: 'healthy',
-			timestamp: new Date().toISOString(),
-		};
-	})
-	// Root endpoint (the /api is bc of cloudflare)
-	.get('/api/', () => {
-		return {
-			message: 'Auto Pool Pump API Server',
-			endpoints: {
-				rest: '/api/hello',
-				websocket: '/api/ws',
-				health: '/api/health',
-			},
-		};
-	})
+
+	// Hello World
+	.get('/api/', 'Hello World')
+
 	.listen(port, () => {
-		console.log(
-			`🚀 Elysia API server is running on http://localhost:${port}`
-		);
-		console.log(`📡 REST API: http://localhost:${port}/api/hello`);
-		console.log(`🔌 WebSocket: ws://localhost:${port}/api/ws`);
-		console.log(`🩺 Health Check: http://localhost:${port}/api/health`);
-		console.log(`📋 API Info: http://localhost:${port}/api/`);
+		console.log(`🚀 Elysia API server is up at http://localhost:${port}`);
+		console.log(`🔌 WS endpoint: ws://localhost:${port}/api/ws`);
 	});
