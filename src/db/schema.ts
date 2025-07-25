@@ -25,3 +25,16 @@ export const sensors = mysqlTable('sensors', {
 
 export type Sensor = typeof sensors.$inferSelect;
 export type NewSensor = typeof sensors.$inferInsert;
+
+// --- sensor_settings table: id as PK, deviceId+setting for lookup ---
+export const sensorSettings = mysqlTable('sensor_settings', {
+	id: int('id').primaryKey().autoincrement(),
+	deviceId: varchar('device_id', { length: 255 }).notNull(),
+	setting: varchar('setting', { length: 64 }).notNull(),
+	value: varchar('value', { length: 255 }).notNull(),
+	type: varchar('type', { length: 32 }).notNull(),
+	updatedAt: timestamp('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type SensorSetting = typeof sensorSettings.$inferSelect;
+export type NewSensorSetting = typeof sensorSettings.$inferInsert;

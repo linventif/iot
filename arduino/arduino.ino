@@ -30,6 +30,10 @@ float tempPool = 0.0;
 float tempOutdoor = 0.0;
 bool relayState = false;
 
+// Add global config variables
+float tempDiffThreshold = TEMP_DIFF_THRESHOLD;
+bool forceRelay = false;
+
 // Fonction de connexion WiFi
 void setupWiFi() {
   Serial.println("Connexion WiFi...");
@@ -117,15 +121,15 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 void handleWebSocketMessage(const char* message) {
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, message);
-  
+
   if (error) {
     Serial.println("Erreur parsing JSON WebSocket");
     return;
   }
-  
+
   const char* type = doc["type"];
   const char* msg = doc["message"];
-  
+
   if (strcmp(type, "connection") == 0) {
     Serial.println("Connexion WebSocket confirmée par le serveur");
     if (lcdConnected) {
@@ -146,6 +150,24 @@ void handleWebSocketMessage(const char* message) {
     Serial.println("Données capteurs reçues par le serveur");
   } else if (strcmp(type, "error") == 0) {
     Serial.printf("Erreur serveur: %s\n", msg);
+  } else if (strcmp(type, "force_on_off") == 0) {
+    forceRelay = doc["value"];
+    Serial.printf("Force relay received: %s\n", forceRelay ? "ON" : "OFF");
+    digitalWrite(PIN_RELAY, forceRelay ? HIGH : LOW);
+    relayState = forceRelay;
+    return;
+  } else if (strcmp(type, "config") == 0) {
+    // Receive config from server
+    if (doc.containsKey("TEMP_DIFF_THRESHOLD")) {
+      tempDiffThreshold = doc["TEMP_DIFF_THRESHOLD"];
+      Serial.printf("Config: TEMP_DIFF_THRESHOLD set to %.2f\n", tempDiffThreshold);
+    }
+    if (doc.containsKey("force_on_off")) {
+      forceRelay = doc["force_on_off"];
+      Serial.printf("Config: force_on_off set to %s\n", forceRelay ? "ON" : "OFF");
+      digitalWrite(PIN_RELAY, forceRelay ? HIGH : LOW);
+      relayState = forceRelay;
+    }
   }
 }
 
@@ -155,17 +177,32 @@ void setupWebSocket() {
     Serial.println("WiFi non connecté, impossible de configurer WebSocket");
     return;
   }
-  
-  // Configuration des callbacks
+
   webSocket.onMessage(onMessageCallback);
   webSocket.onEvent(onEventsCallback);
-  
+
   Serial.printf("Connexion WebSocket à: %s\n", CONFIG_WS_HOST);
-  
-  // Connexion WebSocket
+
   bool connected = webSocket.connect(CONFIG_WS_HOST);
   if(connected) {
     Serial.println("WebSocket configuré avec succès");
+    // Register as device and request config
+    JsonDocument reg;
+    reg["type"] = "register";
+    reg["clientType"] = "device";
+    reg["deviceId"] = CONFIG_DEVICE_ID;
+    String regStr;
+    serializeJson(reg, regStr);
+    webSocket.send(regStr);
+    Serial.println("Registration message sent to server");
+    // Request config after registration
+    JsonDocument req;
+    req["type"] = "get_config";
+    req["deviceId"] = CONFIG_DEVICE_ID;
+    String reqStr;
+    serializeJson(req, reqStr);
+    webSocket.send(reqStr);
+    Serial.println("Config request sent to server");
   } else {
     Serial.println("Erreur connexion WebSocket");
     wsConnected = false;
@@ -309,28 +346,24 @@ void loop() {
   float tempDifference = tempPool - tempOutdoor; // Différence signée (peut être négative)
   float absDifference = abs(tempDifference);
   
-  // Le relais ne se déclenche que si la piscine est plus FROIDE que l'extérieur
-  // (pour activer un chauffage ou une circulation)
-  bool shouldActivateRelay = (tempDifference <= -TEMP_DIFF_THRESHOLD) && 
+  // Use tempDiffThreshold and forceRelay
+  bool shouldActivateRelay = (tempDifference <= -tempDiffThreshold) &&
                              (tempPool != -999.0) && (tempOutdoor != -999.0);
-  
-  if (shouldActivateRelay != relayState) {
-    relayState = shouldActivateRelay;
-    
-    // Activation/désactivation avec logique normale (active HIGH)
+
+  bool relayShouldBe = forceRelay ? true : shouldActivateRelay;
+
+  if (relayShouldBe != relayState) {
+    relayState = relayShouldBe;
     if (relayState) {
-      digitalWrite(PIN_RELAY, HIGH);  // ACTIVATION = HIGH
-      Serial.printf("Pompe ACTIVÉE - Piscine plus froide: %5.2fC < Extérieur: %5.2fC (Diff: %5.2fC)\n", 
-                    tempPool, tempOutdoor, tempDifference);
+      digitalWrite(PIN_RELAY, HIGH);
+      Serial.printf("Pompe ACTIVÉE (force=%s)\n", forceRelay ? "OUI" : "NON");
     } else {
-      digitalWrite(PIN_RELAY, LOW);   // DÉSACTIVATION = LOW (sécurisé)
-      Serial.printf("Pompe DÉSACTIVÉE - Conditions normales (Diff: %5.2fC)\n", tempDifference);
+      digitalWrite(PIN_RELAY, LOW);
+      Serial.printf("Pompe DÉSACTIVÉE (force=%s)\n", forceRelay ? "OUI" : "NON");
     }
-    
-    // Vérification de l'état
     int pinState = digitalRead(PIN_RELAY);
-    Serial.printf("État GPIO %d: %s -> Pompe %s\n", 
-                  PIN_RELAY, pinState ? "HIGH (3.3V)" : "LOW (0V)", 
+    Serial.printf("État GPIO %d: %s -> Pompe %s\n",
+                  PIN_RELAY, pinState ? "HIGH (3.3V)" : "LOW (0V)",
                   pinState ? "ACTIVÉE" : "DÉSACTIVÉE");
   }
 

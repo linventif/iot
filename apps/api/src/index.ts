@@ -1,6 +1,11 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
-import { insertSensorData, getSensorReadings } from '../../../src/db/index';
+import {
+	insertSensorData,
+	getSensorReadings,
+	upsertSensorSetting,
+	getSensorSettings,
+} from '../../../src/db/index';
 import 'dotenv/config';
 
 const port = process.env.PORT || 4001;
@@ -152,6 +157,41 @@ new Elysia()
 				error: 'Failed to fetch sensor history',
 				timestamp: new Date().toISOString(),
 			};
+		}
+	})
+	// Get sensor settings
+	.get('/api/sensors/:sensorId/settings', async ({ params }) => {
+		try {
+			const settings = await getSensorSettings(params.sensorId);
+			return { success: true, settings };
+		} catch (error) {
+			return { success: false, error: 'Failed to fetch settings' };
+		}
+	})
+	// Save/update a sensor setting
+	.post('/api/sensors/:sensorId/settings', async ({ params, body }) => {
+		try {
+			const {
+				setting,
+				value,
+				type,
+			} = body as {
+				setting: string;
+				value: string;
+				type: string;
+			};
+			if (!setting || value === undefined || !type) {
+				return { success: false, error: 'Missing setting, value, or type' };
+			}
+			await upsertSensorSetting({
+				sensorId: params.sensorId,
+				setting,
+				value,
+				type,
+			});
+			return { success: true };
+		} catch (error) {
+			return { success: false, error: 'Failed to save setting' };
 		}
 	})
 	// Health check endpoint

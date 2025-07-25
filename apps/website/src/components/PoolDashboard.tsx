@@ -18,7 +18,33 @@ export default function PoolDashboard() {
 	const [loading, setLoading] = createSignal(true);
 	const [lastUpdate, setLastUpdate] = createSignal<string>('');
 	const [connected, setConnected] = createSignal(false);
+	const [forceRelay, setForceRelay] = createSignal(false);
+	const [forceRelayLoading, setForceRelayLoading] = createSignal(false);
 	let ws: WebSocket | null = null;
+
+	const deviceId = () => sensorData()?.deviceId || 'arduino-pool-monitor-001';
+
+	const fetchForceRelay = async () => {
+		try {
+			const res = await fetch(`/api/sensors/${deviceId()}/settings`);
+			const data = await res.json();
+			if (data.success) {
+				const setting = data.settings.find((s: any) => s.setting === 'force_on_off');
+				setForceRelay(setting?.value === 'true');
+			}
+		} catch {}
+	};
+
+	const updateForceRelay = async (value: boolean) => {
+		setForceRelayLoading(true);
+		await fetch(`/api/sensors/${deviceId()}/settings`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ setting: 'force_on_off', value: String(value), type: 'boolean' }),
+		});
+		setForceRelay(value);
+		setForceRelayLoading(false);
+	};
 
 	const fetchLatestData = async () => {
 		try {
@@ -73,6 +99,7 @@ export default function PoolDashboard() {
 	onMount(() => {
 		connectWebSocket();
 		fetchLatestData();
+		fetchForceRelay();
 		const interval = setInterval(fetchLatestData, 15000); // fallback poll every 15s
 		onCleanup(() => {
 			clearInterval(interval);
@@ -172,6 +199,21 @@ export default function PoolDashboard() {
 											? '🟢 Running'
 											: '🔴 Stopped'}
 									</span>
+								</div>
+								{/* Force Relay Switch */}
+								<div class="mt-4 flex items-center gap-3">
+									<input
+										type="checkbox"
+										class="toggle toggle-primary"
+										checked={forceRelay()}
+										disabled={forceRelayLoading()}
+										onChange={e => updateForceRelay(e.currentTarget.checked)}
+										id="force-relay-toggle"
+									/>
+									<label for="force-relay-toggle" class="cursor-pointer">
+										Force Relay {forceRelay() ? <span class="text-success ml-1">ON</span> : <span class="text-error ml-1">OFF</span>}
+									</label>
+									{forceRelayLoading() && <span class="loading loading-spinner loading-xs"></span>}
 								</div>
 							</div>
 						</div>
