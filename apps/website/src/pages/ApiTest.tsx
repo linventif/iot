@@ -176,7 +176,11 @@ const ApiTest: Component = () => {
 
 				setConnectionStats((prev) => ({
 					...prev,
-					uptime: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
+					uptime: `${hours.toString().padStart(2, '0')}:${minutes
+						.toString()
+						.padStart(2, '0')}:${seconds
+						.toString()
+						.padStart(2, '0')}`,
 				}));
 			}, 1000);
 		};
@@ -445,8 +449,8 @@ const ApiTest: Component = () => {
 												result.status === 'success'
 													? 'alert-success'
 													: result.status === 'error'
-														? 'alert-error'
-														: 'alert-info'
+													? 'alert-error'
+													: 'alert-info'
 											} transition-all duration-300`}
 										>
 											<div class='flex items-center gap-3 w-full'>
@@ -456,9 +460,9 @@ const ApiTest: Component = () => {
 														'success'
 															? 'bg-success'
 															: result.status ===
-																  'error'
-																? 'bg-error'
-																: 'bg-info animate-pulse'
+															  'error'
+															? 'bg-error'
+															: 'bg-info animate-pulse'
 													}`}
 												></div>
 												<div class='flex-1 min-w-0'>
@@ -547,10 +551,18 @@ const ApiTest: Component = () => {
 									</div>
 								</div>
 								<div
-									class={`badge gap-2 ${isConnected() ? 'badge-success' : 'badge-error'}`}
+									class={`badge gap-2 ${
+										isConnected()
+											? 'badge-success'
+											: 'badge-error'
+									}`}
 								>
 									<div
-										class={`w-2 h-2 rounded-full ${isConnected() ? 'bg-success animate-pulse' : 'bg-error'}`}
+										class={`w-2 h-2 rounded-full ${
+											isConnected()
+												? 'bg-success animate-pulse'
+												: 'bg-error'
+										}`}
 									></div>
 									{isConnected()
 										? 'Connected'
@@ -703,9 +715,9 @@ const ApiTest: Component = () => {
 												message.type === 'sent'
 													? 'chat-end'
 													: message.type ===
-														  'received'
-														? 'chat-start'
-														: 'chat-start'
+													  'received'
+													? 'chat-start'
+													: 'chat-start'
 											}`}
 										>
 											<div class='chat-image avatar'>
@@ -714,18 +726,18 @@ const ApiTest: Component = () => {
 														message.type === 'sent'
 															? 'bg-primary'
 															: message.type ===
-																  'received'
-																? 'bg-secondary'
-																: 'bg-base-300'
+															  'received'
+															? 'bg-secondary'
+															: 'bg-base-300'
 													} flex items-center justify-center`}
 												>
 													<span class='text-xs'>
 														{message.type === 'sent'
 															? '👤'
 															: message.type ===
-																  'received'
-																? '🤖'
-																: '⚙️'}
+															  'received'
+															? '🤖'
+															: '⚙️'}
 													</span>
 												</div>
 											</div>
@@ -739,9 +751,9 @@ const ApiTest: Component = () => {
 													message.type === 'sent'
 														? 'chat-bubble-primary'
 														: message.type ===
-															  'received'
-															? 'chat-bubble-secondary'
-															: 'chat-bubble-accent'
+														  'received'
+														? 'chat-bubble-secondary'
+														: 'chat-bubble-accent'
 												}`}
 											>
 												<div class='text-sm'>
@@ -768,19 +780,6 @@ const ApiTest: Component = () => {
 							</div>
 						</div>
 					</div>
-				</div>
-			</div>
-
-			{/* Footer */}
-			<div class='text-center mt-12 p-6'>
-				<div class='divider'>Tech Stack</div>
-				<div class='flex flex-wrap justify-center gap-4 text-sm text-base-content/60'>
-					<span>🚀 Elysia v1.3.5</span>
-					<span>⚛️ SolidJS v1.9.5</span>
-					<span>🎨 FlyonUI v2.3.1</span>
-					<span>🌈 Tailwind CSS v4.0.17</span>
-					<span>⚡ Vite v7.0.5</span>
-					<span>🟨 Bun Runtime</span>
 				</div>
 			</div>
 		</div>
