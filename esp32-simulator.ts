@@ -1,11 +1,31 @@
 import WebSocket from 'ws';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+
+const argv = yargs(hideBin(process.argv))
+	.option('cfg', {
+		alias: 'config',
+		type: 'boolean',
+		description: 'Send current configuration on connect',
+		default: true,
+	})
+	.option('data', {
+		alias: 'sensor',
+		type: 'boolean',
+		description: 'Send periodic sensor data',
+		default: true,
+	})
+	.option('delay', {
+		alias: 'interval',
+		type: 'number',
+		description: 'Interval between sensor data (ms)',
+		default: 5000,
+	})
+	.parseSync();
 
 const WS_URL = 'ws://localhost:4001/api/ws';
 const DEVICE_ID = 'esp32-pool-001';
 const TEMP_THRESHOLD = 3.5;
-const WS_SEND_INTERVAL = 5000;
-const RECONNECT_INTERVAL = 3000;
-
 let forcedState: 'ON' | 'OFF' | 'AUTO' = 'AUTO';
 let relayState = false;
 let ws: WebSocket | null = null;
@@ -18,12 +38,23 @@ function connectWebSocket() {
 	ws.on('open', () => {
 		isConnected = true;
 		console.log(`[ESP] Connected to ${WS_URL}`);
+
+		if (argv.cfg) {
+			const cfg = {
+				type: 'current_config',
+				deviceId: DEVICE_ID,
+				tempThreshold: TEMP_THRESHOLD,
+				forceState: forcedState,
+			};
+			ws!.send(JSON.stringify(cfg));
+			console.log('[ESP] Sent current_cfg:', cfg);
+		}
 	});
 
 	ws.on('close', (code, reason) => {
 		console.warn(`[ESP] WS closed: ${code} – ${reason.toString()}`);
 		isConnected = false;
-		scheduleReconnect();
+		setTimeout(connectWebSocket, 3000);
 	});
 
 	ws.on('error', (err) => {
@@ -37,14 +68,9 @@ function connectWebSocket() {
 	});
 }
 
-function scheduleReconnect() {
-	console.log(`[ESP] Reconnecting in ${RECONNECT_INTERVAL / 1000}s...`);
-	setTimeout(() => {
-		connectWebSocket();
-	}, RECONNECT_INTERVAL);
-}
+function startSensorLoop() {
+	if (!argv.data) return;
 
-function startSendingLoop() {
 	setInterval(() => {
 		if (!isConnected || !ws || ws.readyState !== WebSocket.OPEN) return;
 
@@ -65,8 +91,8 @@ function startSendingLoop() {
 		};
 
 		ws.send(JSON.stringify(msg));
-		console.log('[ESP] Sent:', msg);
-	}, WS_SEND_INTERVAL);
+		console.log('[ESP] Sent sensor_data:', msg);
+	}, argv.delay);
 }
 
 function updateRelayState(poolTemp: number, outTemp: number) {
@@ -90,4 +116,4 @@ function gaussian(mean: number, stddev: number): number {
 
 // 🚀 Boot
 connectWebSocket();
-startSendingLoop();
+startSensorLoop();
