@@ -3,8 +3,8 @@ import { db } from '../db';
 import {
 	sensor_history,
 	sensorDataBaseSchema,
-	sensorWebSocketSchema,
-} from '../schemas/Sensor';
+	sensorDataWebSocketSchema,
+} from '../schemas/SensorData';
 
 export class SensorData {
 	constructor(
@@ -18,7 +18,7 @@ export class SensorData {
 
 	static fromWebSocket(data: unknown): SensorData {
 		console.log('Parsing sensor data from WebSocket:', data);
-		const parsed = sensorWebSocketSchema.parse(data);
+		const parsed = sensorDataWebSocketSchema.parse(data);
 		return new SensorData(
 			parsed.id,
 			parsed.poolTemp,

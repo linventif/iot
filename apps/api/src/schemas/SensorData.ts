@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const sensorSchema = z.object({
+export const sensorDataSchema = z.object({
 	id: z.string(),
 	poolTemp: z.number(),
 	outTemp: z.number(),
@@ -8,13 +8,13 @@ export const sensorSchema = z.object({
 	forceState: z.enum(['ON', 'OFF', 'AUTO']),
 });
 
-export const sensorWebSocketSchema = sensorSchema.extend({
+export const sensorDataWebSocketSchema = sensorDataSchema.extend({
 	type: z.literal('sensor_data'),
 });
 
-export type sensorWebSocketType = z.infer<typeof sensorWebSocketSchema>;
+export type sensorDataWebSocketType = z.infer<typeof sensorDataWebSocketSchema>;
 
-export const sensorDataBaseSchema = sensorSchema.extend({
+export const sensorDataBaseSchema = sensorDataSchema.extend({
 	createdAt: z.coerce.date(),
 });
 
