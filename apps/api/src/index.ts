@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import 'dotenv/config';
+import { getAllWebSocketEvents } from './classes/WebSocketEvent';
 
 const port = Number(process.env.PORT || 4001);
 
@@ -10,6 +11,10 @@ interface WSClientInfo {
 	deviceId?: string;
 }
 const wsClients = new Map<any, WSClientInfo>();
+
+// create a collection of wsEvents by loading the events froms the ./api/events directory event are
+const wsEvents = await getAllWebSocketEvents();
+console.log('[WS] Loaded events:', wsEvents);
 
 new Elysia()
 	.use(
@@ -45,121 +50,154 @@ new Elysia()
 				return;
 			}
 
-			// 1) Register clients (device or website)
-			if (data.type === 'register' && data.clientType) {
-				const info: WSClientInfo = {
-					type: data.clientType,
-					deviceId: data.deviceId,
-				};
-				wsClients.set(ws, info);
-				console.log(
-					`[WS] Registered ${data.clientType} (${
-						data.deviceId || '–'
-					})`
-				);
-
-				// If it's a device, send it its current config
-				if (info.type === 'device' && info.deviceId) {
-					console.log(
-						`[WS] Sending current config to device ${info.deviceId}`
-					);
-					// const rows = await getSensorSettings(info.deviceId);
-					// const cfg = Object.fromEntries(
-					// 	rows.map((r) => [r.setting, r.value])
-					// );
-					// ws.send(
-					// 	JSON.stringify({
-					// 		type: 'current_config',
-					// 		deviceId: info.deviceId,
-					// 		...cfg,
-					// 	})
-					// );
-				}
-				return;
-			}
-
-			// 2) Incoming sensor_data
-			if (data.type === 'sensor_data') {
-				const {
-					deviceId,
-					poolTemp,
-					outTemp,
-					relayState,
-					wifiSignal,
-					freeHeap,
-					uptime,
-					timestamp: deviceTimestamp,
-				} = data;
-
-				// await insertSensorData({
-				// 	deviceId,
-				// 	tempPool: poolTemp,
-				// 	tempOutdoor: outTemp,
-				// 	relayState,
-				// 	wifiSignal,
-				// 	freeHeap,
-				// 	uptime,
-				// 	deviceTimestamp,
-				// });
-				console.log('[WS] Saved sensor_data for', deviceId);
-
-				// Broadcast to all website clients
-				for (const [client, info] of wsClients.entries()) {
-					if (info.type === 'website') {
-						client.send(
-							JSON.stringify({ type: 'sensor_data', ...data })
-						);
-					}
-				}
-				return;
-			}
-
-			// 3) Incoming update_config
-			if (data.type === 'update_config') {
-				const { deviceId, tempThreshold } = data;
-				// await upsertSensorSetting({
-				// 	deviceId,
-				// 	setting: 'tempThreshold',
-				// 	value: String(tempThreshold),
-				// 	type: 'float',
-				// });
-				console.log(
-					'[WS] Updated tempThreshold for',
-					deviceId,
-					'=',
-					tempThreshold
+			if (!data || !data.type) {
+				console.error('[WS] Missing type in message');
+				ws.send(
+					JSON.stringify({ type: 'error', error: 'Missing type' })
 				);
 				return;
 			}
 
-			// 4) Incoming force_relay
-			if (data.type === 'force_relay') {
-				const { deviceId, forceState } = data;
-				// await upsertSensorSetting({
-				// 	deviceId,
-				// 	setting: 'forceState',
-				// 	value: forceState,
-				// 	type: 'string',
-				// });
-				console.log(
-					'[WS] Updated forceState for',
-					deviceId,
-					'=',
-					forceState
+			if (!wsEvents[data.type]) {
+				console.error(`[WS] Unknown event type: ${data.type}`);
+				ws.send(
+					JSON.stringify({
+						type: 'error',
+						error: `Unknown event type: ${data.type}`,
+					})
 				);
 				return;
 			}
 
-			// 5) Unknown type
-			ws.send(
-				JSON.stringify({ type: 'error', error: 'Unknown message type' })
-			);
+			try {
+				console.log(`[WS] Received event: ${data.type}`);
+				await wsEvents[data.type].onData(ws, data);
+			} catch (error) {
+				console.error(`[WS] Error in event ${data.type}:`, error);
+				ws.send(
+					JSON.stringify({
+						type: 'error',
+						error: `Error in event ${data.type}`,
+					})
+				);
+			}
 		},
 
-		close(ws) {
-			console.log('[WS] Connection closed');
-			wsClients.delete(ws);
-		},
+		// // 1) Register clients (device or website)
+		// if (data.type === 'register' && data.clientType) {
+		// 	const info: WSClientInfo = {
+		// 		type: data.clientType,
+		// 		deviceId: data.deviceId,
+		// 	};
+		// 	wsClients.set(ws, info);
+		// 	console.log(
+		// 		`[WS] Registered ${data.clientType} (${
+		// 			data.deviceId || '–'
+		// 		})`
+		// 	);
+
+		// 	// If it's a device, send it its current config
+		// 	if (info.type === 'device' && info.deviceId) {
+		// 		console.log(
+		// 			`[WS] Sending current config to device ${info.deviceId}`
+		// 		);
+		// 		// const rows = await getSensorSettings(info.deviceId);
+		// 		// const cfg = Object.fromEntries(
+		// 		// 	rows.map((r) => [r.setting, r.value])
+		// 		// );
+		// 		// ws.send(
+		// 		// 	JSON.stringify({
+		// 		// 		type: 'current_config',
+		// 		// 		deviceId: info.deviceId,
+		// 		// 		...cfg,
+		// 		// 	})
+		// 		// );
+		// 	}
+		// 	return;
+		// }
+
+		// // 2) Incoming sensor_data
+		// if (data.type === 'sensor_data') {
+		// 	const {
+		// 		deviceId,
+		// 		poolTemp,
+		// 		outTemp,
+		// 		relayState,
+		// 		wifiSignal,
+		// 		freeHeap,
+		// 		uptime,
+		// 		timestamp: deviceTimestamp,
+		// 	} = data;
+
+		// 	// await insertSensorData({
+		// 	// 	deviceId,
+		// 	// 	tempPool: poolTemp,
+		// 	// 	tempOutdoor: outTemp,
+		// 	// 	relayState,
+		// 	// 	wifiSignal,
+		// 	// 	freeHeap,
+		// 	// 	uptime,
+		// 	// 	deviceTimestamp,
+		// 	// });
+		// 	console.log('[WS] Saved sensor_data for', deviceId);
+
+		// 	// Broadcast to all website clients
+		// 	for (const [client, info] of wsClients.entries()) {
+		// 		if (info.type === 'website') {
+		// 			client.send(
+		// 				JSON.stringify({ type: 'sensor_data', ...data })
+		// 			);
+		// 		}
+		// 	}
+		// 	return;
+		// }
+
+		// // 3) Incoming update_config
+		// if (data.type === 'update_config') {
+		// 	const { deviceId, tempThreshold } = data;
+		// 	// await upsertSensorSetting({
+		// 	// 	deviceId,
+		// 	// 	setting: 'tempThreshold',
+		// 	// 	value: String(tempThreshold),
+		// 	// 	type: 'float',
+		// 	// });
+		// 	console.log(
+		// 		'[WS] Updated tempThreshold for',
+		// 		deviceId,
+		// 		'=',
+		// 		tempThreshold
+		// 	);
+		// 	return;
+		// }
+
+		// // 4) Incoming force_relay
+		// if (data.type === 'force_relay') {
+		// 	const { deviceId, forceState } = data;
+		// 	// await upsertSensorSetting({
+		// 	// 	deviceId,
+		// 	// 	setting: 'forceState',
+		// 	// 	value: forceState,
+		// 	// 	type: 'string',
+		// 	// });
+		// 	console.log(
+		// 		'[WS] Updated forceState for',
+		// 		deviceId,
+		// 		'=',
+		// 		forceState
+		// 	);
+		// 	return;
+		// }
+
+		// 5) Unknown type
+		// ws.send(
+		// 	JSON.stringify({ type: 'error', error: 'Unknown message type' })
+		// );
+		// },
+
+		// close(ws) {
+		// 	console.log('[WS] Connection closed');
+		// 	wsClients.delete(ws);
+		// },
 	})
 
 	// REST: latest sensor reading
