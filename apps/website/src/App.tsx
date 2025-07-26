@@ -3,7 +3,6 @@ import { createEffect, JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 
 import Home from './pages/Home';
-import ApiTest from './pages/ApiTest';
 import NotFound from './pages/NotFound';
 import PoolDashboard from './components/PoolDashboard';
 
@@ -47,7 +46,6 @@ render(
 		<Router root={App}>
 			<Route path='/' component={Home} />
 			<Route path='/monitor/pool' component={PoolDashboard} />
-			<Route path='/test' component={ApiTest} />
 			<Route path='*404' component={NotFound} />
 		</Router>
 	),

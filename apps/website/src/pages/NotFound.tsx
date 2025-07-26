@@ -85,36 +85,6 @@ const NotFound: Component = () => {
 							</A>
 						</div>
 					</div>
-
-					<div class='card bg-base-100 shadow-xl border border-secondary/10 hover:shadow-2xl transition-all duration-300 hover:scale-105'>
-						<div class='card-body text-center'>
-							<div class='w-12 h-12 bg-gradient-to-br from-secondary to-secondary-focus rounded-xl flex items-center justify-center mx-auto mb-4'>
-								<svg
-									class='w-6 h-6 text-secondary-content'
-									fill='currentColor'
-									viewBox='0 0 20 20'
-								>
-									<path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' />
-								</svg>
-							</div>
-							<h3 class='card-title text-lg justify-center mb-2'>
-								Test API
-							</h3>
-							<p class='text-base-content/60 mb-4'>
-								Try our API testing dashboard
-							</p>
-							<A href='/test' class='btn btn-secondary'>
-								<svg
-									class='w-4 h-4'
-									fill='currentColor'
-									viewBox='0 0 20 20'
-								>
-									<path d='M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z' />
-								</svg>
-								Start Testing
-							</A>
-						</div>
-					</div>
 				</div>
 
 				{/* Fun Facts */}
