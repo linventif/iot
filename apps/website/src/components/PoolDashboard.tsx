@@ -1,73 +1,74 @@
-import { createSignal, onMount, onCleanup } from 'solid-js';
-
-interface SensorData {
-	id: number;
-	deviceId: string;
-	tempPool: string;
-	tempOutdoor: string;
-	relayState: boolean;
-	wifiSignal: number;
-	freeHeap: number;
-	uptime: number;
-	deviceTimestamp: number;
-	createdAt: string;
-}
+import {
+	createSignal,
+	onMount,
+	onCleanup,
+	createResource,
+	Show,
+} from 'solid-js';
+import { SensorDataWebSocketType } from '@schemas/src/SensorData';
+import { getAPIUrl } from '../utils/utils';
 
 export default function PoolDashboard() {
-	const [sensorData, setSensorData] = createSignal<SensorData | null>(null);
-	const [loading, setLoading] = createSignal(true);
-	const [lastUpdate, setLastUpdate] = createSignal<string>('');
+	// const [loading, setLoading] = createSignal(true);
+	// const [lastUpdate, setLastUpdate] = createSignal<string>('');
 	const [connected, setConnected] = createSignal(false);
 	const [forceRelay, setForceRelay] = createSignal(false);
 	const [forceRelayLoading, setForceRelayLoading] = createSignal(false);
 	let ws: WebSocket | null = null;
 
-	// const [data, { mutate, refetch }] = createResource(source, fetchData)
+	async function fetchLatestSensorData(): Promise<SensorDataWebSocketType> {
+		const res = await fetch(`${getAPIUrl()}/api/sensors/latest`);
+		if (!res.ok) throw new Error(res.statusText);
+		return (await res.json()) as SensorDataWebSocketType;
+	}
 
-	const deviceId = () => sensorData()?.deviceId || 'esp32-pool-monitor';
+	const [
+		sensorData,
+		{ refetch: refetchSensorData, mutate: mutateSensorData },
+	] = createResource<SensorDataWebSocketType>(fetchLatestSensorData);
 
-	const fetchForceRelay = async () => {
-		try {
-			const res = await fetch(`/api/sensors/${deviceId()}/settings`);
-			const data = await res.json();
-			if (data.success) {
-				const setting = data.settings.find(
-					(s: any) => s.setting === 'force_on_off'
-				);
-				setForceRelay(setting?.value === 'true');
-			}
-		} catch {}
-	};
+	// const fetchForceRelay = async () => {
+	// 	try {
+	// 		const res = await fetch(`/api/sensors/${deviceId()}/settings`);
+	// 		const data = await res.json();
+	// 		if (data.success) {
+	// 			const setting = data.settings.find(
+	// 				(s: any) => s.setting === 'force_on_off'
+	// 			);
+	// 			setForceRelay(setting?.value === 'true');
+	// 		}
+	// 	} catch {}
+	// };
 
-	const updateForceRelay = async (value: boolean) => {
-		setForceRelayLoading(true);
-		await fetch(`/api/sensors/${deviceId()}/settings`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				setting: 'force_on_off',
-				value: String(value),
-				type: 'boolean',
-			}),
-		});
-		setForceRelay(value);
-		setForceRelayLoading(false);
-	};
+	// const updateForceRelay = async (value: boolean) => {
+	// 	setForceRelayLoading(true);
+	// 	await fetch(`/api/sensors/${deviceId()}/settings`, {
+	// 		method: 'POST',
+	// 		headers: { 'Content-Type': 'application/json' },
+	// 		body: JSON.stringify({
+	// 			setting: 'force_on_off',
+	// 			value: String(value),
+	// 			type: 'boolean',
+	// 		}),
+	// 	});
+	// 	setForceRelay(value);
+	// 	setForceRelayLoading(false);
+	// };
 
-	const fetchLatestData = async () => {
-		try {
-			const response = await fetch('/api/sensors/latest');
-			const result = await response.json();
-			if (result.success && result.data) {
-				setSensorData(result.data);
-				setLastUpdate(new Date().toLocaleTimeString());
-			}
-		} catch (error) {
-			console.error('Failed to fetch sensor data:', error);
-		} finally {
-			setLoading(false);
-		}
-	};
+	// const fetchLatestData = async () => {
+	// 	try {
+	// 		const response = await fetch('/api/sensors/latest');
+	// 		const result = await response.json();
+	// 		if (result.success && result.data) {
+	// 			setSensorData(result.data);
+	// 			setLastUpdate(new Date().toLocaleTimeString());
+	// 		}
+	// 	} catch (error) {
+	// 		console.error('Failed to fetch sensor data:', error);
+	// 	} finally {
+	// 		setLoading(false);
+	// 	}
+	// };
 
 	const connectWebSocket = () => {
 		const wsUrl = `ws://${window.location.hostname}:4001/api/ws`;
@@ -85,9 +86,9 @@ export default function PoolDashboard() {
 			try {
 				const data = JSON.parse(event.data);
 				if (data.type === 'sensor_data') {
-					setSensorData(data);
-					setLastUpdate(new Date().toLocaleTimeString());
-					setLoading(false);
+					// mutateSensorData(data as SensorDataWebSocketType);
+					// setLastUpdate(new Date().toLocaleTimeString());
+					// setLoading(false);
 				}
 			} catch (error) {
 				console.error('Error parsing WebSocket message:', error);
@@ -106,11 +107,8 @@ export default function PoolDashboard() {
 
 	onMount(() => {
 		connectWebSocket();
-		fetchLatestData();
-		fetchForceRelay();
-		const interval = setInterval(fetchLatestData, 15000); // fallback poll every 15s
 		onCleanup(() => {
-			clearInterval(interval);
+			// clearInterval(interval);
 			if (ws) ws.close();
 		});
 	});
@@ -133,67 +131,61 @@ export default function PoolDashboard() {
 					>
 						{connected() ? '🟢 Connected' : '🔴 Disconnected'}
 					</div>
-					{lastUpdate() && (
+					{/* {lastUpdate() && (
 						<p class='text-sm text-base-content/50 mt-0'>
 							Last updated: {lastUpdate()}
 						</p>
-					)}
+					)} */}
 				</div>
 			</div>
 
-			{loading() ? (
+			{/* {loading() ? (
 				<div class='flex justify-center items-center h-64'>
 					<span class='loading loading-spinner loading-lg'></span>
 				</div>
 			) : (
-				<>
-					{/* Temperature Cards */}
-					<div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
-						{/* Pool Temperature */}
-						<div class='card bg-primary text-primary-content'>
-							<div class='card-body'>
-								<h2 class='card-title text-2xl'>
-									🌊 Pool Temperature
-								</h2>
-								<div class='text-5xl font-bold'>
-									{sensorData()?.tempPool
-										? parseFloat(
-												sensorData()!.tempPool
-										  ).toFixed(1)
-										: '--'}
-									°C
-								</div>
-								<p class='opacity-80'>
-									Current pool water temperature
-								</p>
-							</div>
+				<> */}
+			{/* Temperature Cards */}
+			<div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
+				{/* Pool Temperature */}
+				<div class='card bg-primary text-primary-content'>
+					<div class='card-body'>
+						<h2 class='card-title text-2xl'>🌊 Pool Temperature</h2>
+						<div class='text-5xl font-bold'>
+							<Show when={!sensorData.loading} fallback='--'>
+								{sensorData()?.poolTemp !== undefined
+									? Number(sensorData()!.poolTemp).toFixed(1)
+									: '--'}
+								°C
+							</Show>
 						</div>
-
-						{/* Outdoor Temperature */}
-						<div class='card bg-secondary text-secondary-content'>
-							<div class='card-body'>
-								<h2 class='card-title text-2xl'>
-									🌡️ Outdoor Temperature
-								</h2>
-								<div class='text-5xl font-bold'>
-									{sensorData()?.tempOutdoor
-										? parseFloat(
-												sensorData()!.tempOutdoor
-										  ).toFixed(1)
-										: '--'}
-									°C
-								</div>
-								<p class='opacity-80'>
-									Ambient air temperature
-								</p>
-							</div>
-						</div>
+						<p class='opacity-80'>Current pool water temperature</p>
 					</div>
+				</div>
 
-					{/* System Status */}
-					{/* <div class='grid grid-cols-1 md:grid-cols-3 gap-6'> */}
-					{/* Relay Status */}
-					{/* <div class='card bg-base-100 shadow-xl'>
+				{/* Outdoor Temperature */}
+				<div class='card bg-secondary text-secondary-content'>
+					<div class='card-body'>
+						<h2 class='card-title text-2xl'>
+							🌡️ Outdoor Temperature
+						</h2>
+						<div class='text-5xl font-bold'>
+							<Show when={!sensorData.loading} fallback='--'>
+								{sensorData()?.outTemp !== undefined
+									? Number(sensorData()!.outTemp).toFixed(1)
+									: '--'}
+								°C
+							</Show>
+						</div>
+						<p class='opacity-80'>Ambient air temperature</p>
+					</div>
+				</div>
+			</div>
+
+			{/* System Status */}
+			{/* <div class='grid grid-cols-1 md:grid-cols-3 gap-6'> */}
+			{/* Relay Status */}
+			{/* <div class='card bg-base-100 shadow-xl'>
 							<div class='card-body'>
 								<h2 class='card-title'>⚡ Pump Status</h2>
 								<div class='flex items-center space-x-3'>
@@ -214,8 +206,8 @@ export default function PoolDashboard() {
 											: '🔴 Stopped'}
 									</span>
 								</div> */}
-					{/* Force Relay Switch */}
-					{/* <div class='mt-4 flex items-center gap-3'>
+			{/* Force Relay Switch */}
+			{/* <div class='mt-4 flex items-center gap-3'>
 									<input
 										type='checkbox'
 										class='toggle toggle-primary'
@@ -283,8 +275,8 @@ export default function PoolDashboard() {
 								</div>
 							</div>
 						</div> */}
-					{/* System Info */}
-					{/* <div class='card bg-base-100 shadow-xl'>
+			{/* System Info */}
+			{/* <div class='card bg-base-100 shadow-xl'>
 							<div class='card-body'>
 								<h2 class='card-title'>💾 System Info</h2>
 								<div class='space-y-2'>
@@ -321,8 +313,8 @@ export default function PoolDashboard() {
 						</div>
 					</div> */}
 
-					{/* Device Info */}
-					{/* <div class='card bg-base-100 shadow-xl'>
+			{/* Device Info */}
+			{/* <div class='card bg-base-100 shadow-xl'>
 						<div class='card-body'>
 							<h2 class='card-title'>🔧 Device Information</h2>
 							<div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -349,8 +341,8 @@ export default function PoolDashboard() {
 							</div>
 						</div>
 					</div> */}
-				</>
-			)}
+			{/* </> */}
+			{/* )} */}
 		</div>
 	);
 }
