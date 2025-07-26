@@ -87,6 +87,7 @@ void sendSensorData(float poolTemp, float outTemp, bool relayState, const AppCon
   }
   DynamicJsonDocument doc(256);
   doc["type"]               = "sensor_data";
+  doc["id"]                 = cfg.deviceId; // Ajouté pour compatibilité API
   doc[CFG_KEY_DEVICE_ID]    = cfg.deviceId;
   doc["poolTemp"]           = poolTemp;
   doc["outTemp"]            = outTemp;
