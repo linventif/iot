@@ -63,10 +63,15 @@ static void onEventsCallback(WebsocketsEvent event, String) {
 void setupWiFi() {
   Serial.printf("[WIFI] Connecting to %s\n", WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts++ < WIFI_CONNECT_TIMEOUT) {
-    delay(1000);
-    Serial.print('.');
+  unsigned long start   = millis();
+  unsigned long lastLog = start;
+  while (WiFi.status() != WL_CONNECTED && (millis() - start) < (WIFI_CONNECT_TIMEOUT * 1000)) {
+    unsigned long now = millis();
+    if (now - lastLog >= 1000) {
+      lastLog += 1000;
+      Serial.print('.');
+    }
+    yield();
   }
   wifiConnected = (WiFi.status() == WL_CONNECTED);
   Serial.printf("[WIFI] %s\n", wifiConnected ? "Connected" : "Failed");
