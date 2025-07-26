@@ -22,6 +22,8 @@ export default function PoolDashboard() {
 	const [forceRelayLoading, setForceRelayLoading] = createSignal(false);
 	let ws: WebSocket | null = null;
 
+	// const [data, { mutate, refetch }] = createResource(source, fetchData)
+
 	const deviceId = () => sensorData()?.deviceId || 'arduino-pool-monitor-001';
 
 	const fetchForceRelay = async () => {
