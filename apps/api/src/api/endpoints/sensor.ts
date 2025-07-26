@@ -1,6 +1,11 @@
 import Elysia from 'elysia';
+import { getLatestSensorData } from '../../classes/SensorData';
 
-export const hello = new Elysia().get('/', () => 'Hello World!');
+export const hello = new Elysia()
+	.get('/', () => 'Hello World!')
+	.get('/api/sensors/latest', async ({ query }) => {
+		return await getLatestSensorData();
+	});
 
 // // REST: latest sensor reading
 // .get('/api/sensors/latest', async ({ query }) => {

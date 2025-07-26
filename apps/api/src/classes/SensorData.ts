@@ -51,3 +51,9 @@ export class SensorData {
 		return this;
 	}
 }
+
+export async function getLatestSensorData() {
+	return await db.query.sensor_history.findFirst({
+		orderBy: (table, { desc }) => desc(table.createdAt),
+	});
+}
