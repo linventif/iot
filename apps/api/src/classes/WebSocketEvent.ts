@@ -1,3 +1,5 @@
+import { ElysiaWS } from 'elysia/dist/ws';
+
 export class WebSocketEvent {
 	type: string;
 	onData: (wsClient: any, data: any) => Promise<void>;
@@ -14,7 +16,7 @@ export class WebSocketEvent {
 		return this;
 	}
 
-	setOnData(callback: (wsClient: WebSocket, data: any) => Promise<void>) {
+	setOnData(callback: (wsClient: ElysiaWS, data: any) => Promise<void>) {
 		this.onData = callback;
 		return this;
 	}
