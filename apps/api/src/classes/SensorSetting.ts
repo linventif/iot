@@ -1,5 +1,8 @@
 import { db } from '../db';
-import { sensor_setting, SensorSettingSchema } from '../schemas/SensorSetting';
+import {
+	sensor_setting,
+	SensorSettingSchema,
+} from '@schemas/src/SensorSetting';
 
 export class SensorSetting {
 	constructor(

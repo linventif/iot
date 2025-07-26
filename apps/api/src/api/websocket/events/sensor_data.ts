@@ -1,5 +1,5 @@
 import { SensorData } from '../../../classes/SensorData';
-import { SensorDataWebSocketType } from '../../../schemas/SensorData';
+import { SensorDataWebSocketType } from '@schemas/src/SensorData';
 import { WebSocketEvent } from '../../../classes/WebSocketEvent';
 
 export default new WebSocketEvent()

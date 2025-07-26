@@ -3,7 +3,8 @@
 	"private": true,
 	"packageManager": "bun@1.2.19",
 	"workspaces": [
-		"apps/*"
+		"apps/*",
+		"packages/*"
 	],
 	"scripts": {
 		"build": "turbo build",
@@ -16,11 +17,9 @@
 		"type-check": "turbo type-check",
 		"clean": "turbo clean && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
 		"simulate": "bun run simulate-esp32.ts",
-		"db:generate": "cd apps/api && drizzle-kit generate && cd ../../",
-		"db:migrate": "cd apps/api && drizzle-kit migrate && cd ../../",
-		"db:studio": "cd apps/api && drizzle-kit studio && cd ../../",
-		"db:push": "cd apps/api && drizzle-kit push && cd ../../",
-		"db:reset": "cd apps/api && drizzle-kit push --force && cd ../../"
+		"db:generate": "drizzle-kit generate",
+		"db:push": "drizzle-kit push",
+		"db:studio": "drizzle-kit studio"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
@@ -30,11 +29,14 @@
 	},
 	"dependencies": {
 		"@libsql/client": "^0.15.10",
-		"dotenv": "^17.2.0",
+		"dotenv": "^17.2.1",
 		"drizzle-orm": "^0.44.3",
 		"drizzle-typebox": "^0.3.3",
 		"mysql2": "^3.14.2",
-		"yargs": "^18.0.0"
+		"yargs": "^18.0.0",
+		"drizzle-zod": "^0.8.2",
+		"elysia": "latest",
+		"zod": "^4.0.10"
 	},
 	"overrides": {
 		"@sinclair/typebox": "0.34.33"

@@ -1,5 +1,5 @@
 import { WebSocketEvent } from '../../../classes/WebSocketEvent';
-import { SensorDataWebSocketType } from '../../../schemas/SensorData';
+import { SensorDataWebSocketType } from '@schemas/src/SensorData';
 
 export default new WebSocketEvent()
 	.setType('register')

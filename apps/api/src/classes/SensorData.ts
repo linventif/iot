@@ -3,7 +3,7 @@ import {
 	sensor_history,
 	SensorDataBaseSchema,
 	SensorDataWebSocketSchema,
-} from '../schemas/SensorData';
+} from '@schemas/src/SensorData';
 
 export class SensorData {
 	constructor(
