@@ -19,7 +19,8 @@
 		"db:generate": "cd apps/api && drizzle-kit generate && cd ../../",
 		"db:migrate": "cd apps/api && drizzle-kit migrate && cd ../../",
 		"db:studio": "cd apps/api && drizzle-kit studio && cd ../../",
-		"db:push": "cd apps/api && drizzle-kit push && cd ../../"
+		"db:push": "cd apps/api && drizzle-kit push && cd ../../",
+		"db:reset": "cd apps/api && drizzle-kit push --force && cd ../../"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
