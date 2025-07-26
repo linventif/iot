@@ -32,6 +32,12 @@ static void onMessageCallback(WebsocketsMessage msg) {
       currentCfg->tempThreshold = newTh;
       changed = true;
     }
+    if (doc.containsKey(CFG_KEY_TEMP_THRESHOLD_ANTIBACK)) {
+      float newTh = doc[CFG_KEY_TEMP_THRESHOLD_ANTIBACK];
+      Serial.printf("[CONFIG] tempThresholdAntiback → %.1f\n", newTh);
+      currentCfg->tempThresholdAntiback = newTh;
+      changed = true;
+    }
     if (doc.containsKey(CFG_KEY_DEVICE_ID)) {
       String newId = doc[CFG_KEY_DEVICE_ID].as<const char*>();
       Serial.printf("[CONFIG] deviceId → %s\n", newId.c_str());
@@ -109,7 +115,6 @@ void sendSensorData(float poolTemp, float outTemp, bool relayState, const AppCon
   }
   DynamicJsonDocument doc(256);
   doc["type"]               = "sensor_data";
-  doc["id"]                 = cfg.deviceId; // Ajouté pour compatibilité API
   doc[CFG_KEY_DEVICE_ID]    = cfg.deviceId;
   doc["poolTemp"]           = poolTemp;
   doc["outTemp"]            = outTemp;
