@@ -6,6 +6,7 @@
 struct AppConfig {
   String deviceId;
   float tempThreshold;
+  float tempThresholdAntiback;
 };
 
 void initStorage();

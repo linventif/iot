@@ -26,6 +26,7 @@ const argv = yargs(hideBin(process.argv))
 const WS_URL = 'ws://localhost:4001/api/ws';
 const DEVICE_ID = 'esp32-pool-001';
 const TEMP_THRESHOLD = 3.5;
+const DEFAULT_TEMP_THRESHOLD_ANTIBACK = 1.0; // Default antiback threshold
 let forcedState: 'ON' | 'OFF' | 'AUTO' = 'AUTO';
 let relayState = false;
 let ws: WebSocket | null = null;
@@ -44,6 +45,7 @@ function connectWebSocket() {
 				type: 'current_config',
 				deviceId: DEVICE_ID,
 				tempThreshold: TEMP_THRESHOLD,
+				tempThresholdAntiback: DEFAULT_TEMP_THRESHOLD_ANTIBACK,
 				forceState: forcedState,
 			};
 			ws!.send(JSON.stringify(cfg));

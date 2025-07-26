@@ -61,9 +61,30 @@ void loop() {
     lastOutdoorTemp = readOutdoorTemperature();
 
     bool relayCur = digitalRead(PIN_RELAY);
-    if      (forcedState == "ON")  lastRelayState = true;
-    else if (forcedState == "OFF") lastRelayState = false;
-    else                            lastRelayState = ((lastPoolTemp - lastOutdoorTemp) <= cfg.tempThreshold);
+    if (forcedState == "ON") {
+      lastRelayState = true;
+    } else if (forcedState == "OFF") {
+      lastRelayState = false;
+    } else {
+      double tempDiff = (lastPoolTemp - lastOutdoorTemp) * -1.0; // Invert to match logic of config
+      Serial.printf("[RELAY] Temp Diff: %.1f°C\n", tempDiff);
+      // Hysteresis: turn ON above threshold, turn OFF below threshold - antiback
+      if (!relayCur) {
+        if (tempDiff > cfg.tempThreshold) {
+          lastRelayState = true;
+          Serial.println("[RELAY] Turning ON relay (Pool > Outdoor + Threshold)");
+        } else {
+          lastRelayState = false;
+        }
+      } else {
+        if (tempDiff < (cfg.tempThreshold - cfg.tempThresholdAntiback)) {
+          lastRelayState = false;
+          Serial.println("[RELAY] Turning OFF relay (Pool <= Outdoor + Threshold - Antiback)");
+        } else {
+          lastRelayState = true;
+        }
+      }
+    }
 
     if (lastRelayState != relayCur) {
       digitalWrite(PIN_RELAY, lastRelayState);

@@ -24,7 +24,7 @@ export default function PoolDashboard() {
 
 	// const [data, { mutate, refetch }] = createResource(source, fetchData)
 
-	const deviceId = () => sensorData()?.deviceId || 'arduino-pool-monitor-001';
+	const deviceId = () => sensorData()?.deviceId || 'esp32-pool-monitor';
 
 	const fetchForceRelay = async () => {
 		try {

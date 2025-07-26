@@ -10,6 +10,7 @@ void initStorage() {
 bool loadConfig(AppConfig &cfg) {
   cfg.deviceId      = prefs.getString(CFG_KEY_DEVICE_ID, DEFAULT_DEVICE_ID);
   cfg.tempThreshold = prefs.getFloat(CFG_KEY_TEMP_THRESHOLD, DEFAULT_TEMP_THRESHOLD);
+  cfg.tempThresholdAntiback = prefs.getFloat(DEFAULT_TEMP_THRESHOLD_ANTIBACK);
   return true;
 }
 

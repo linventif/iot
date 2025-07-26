@@ -6,6 +6,7 @@
 // Clés JSON et Preferences
 #define CFG_KEY_DEVICE_ID      "id"
 #define CFG_KEY_TEMP_THRESHOLD "tempThreshold"
+#define CFG_KEY_TEMP_THRESHOLD_ANTIBACK "tempThresholdAntiback"
 
 // Commandes WS
 #define CMD_KEY_TYPE           "type"
@@ -15,8 +16,9 @@
 #define CMD_KEY_FORCE_STATE    "forceState"  // "ON","OFF","AUTO"
 
 // Valeurs par défaut
-#define DEFAULT_DEVICE_ID      "arduino-pool-monitor-001"
+#define DEFAULT_DEVICE_ID      "esp32-pool-monitor"
 #define DEFAULT_TEMP_THRESHOLD 2.0
+#define DEFAULT_TEMP_THRESHOLD_ANTIBACK 0.5
 
 // Configuration WiFi
 #define WIFI_SSID              "ecreall_wifi"
