@@ -4,7 +4,7 @@
 #include <ArduinoJson.h>
 
 // Clés JSON et Preferences
-#define CFG_KEY_DEVICE_ID      "deviceId"
+#define CFG_KEY_DEVICE_ID      "id"
 #define CFG_KEY_TEMP_THRESHOLD "tempThreshold"
 
 // Commandes WS
