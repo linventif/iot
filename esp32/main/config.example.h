@@ -41,5 +41,6 @@
 // Intervalles et timeouts
 #define WIFI_CONNECT_TIMEOUT   20     // secondes
 #define WS_SEND_INTERVAL       30000  // millisecondes
+#define LOG_INTERVAL           1000   // intervalle journalisation/affichage (ms)
 
 #endif // CONFIG_H
