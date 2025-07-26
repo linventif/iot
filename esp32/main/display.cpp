@@ -15,9 +15,13 @@ void initDisplay() {
 
 void updateDisplay(float tempPool, float tempOutdoor, bool relayState) {
   lcd.setCursor(0, 0);
+  lcd.print("                "); // Efface la ligne 0 (16 espaces)
+  lcd.setCursor(0, 0);
   if (tempPool < -100) lcd.print("Pool: ERR");
   else                lcd.printf("Pool:%3.1fC %s", tempPool, relayState ? "ON" : "OFF");
 
+  lcd.setCursor(0, 1);
+  lcd.print("                "); // Efface la ligne 1 (16 espaces)
   lcd.setCursor(0, 1);
   if (tempOutdoor < -100) lcd.print("Out: ERR");
   else {
