@@ -5,7 +5,10 @@
 #include "network.h"
 
 AppConfig cfg;
-static unsigned long lastSendTime = 0;
+static unsigned long lastSendTime    = 0;
+static unsigned long lastDisplayTime = 0;
+static float currentPoolTemp = 0.0f;
+static float currentOutTemp  = 0.0f;
 
 void setup() {
   Serial.begin(115200);
@@ -48,24 +51,33 @@ void loop() {
   }
   webSocket.poll();
 
-  float tPool = readPoolTemperature();
-  float tOut  = readOutdoorTemperature();
+  unsigned long now = millis();
+
+  bool refreshDisplay = false;
+  if (now - lastDisplayTime >= 500) {
+    lastDisplayTime = now;
+    currentPoolTemp = readPoolTemperature();
+    currentOutTemp  = readOutdoorTemperature();
+    refreshDisplay  = true;
+  }
 
   bool relayCur = digitalRead(PIN_RELAY);
   bool relayNext;
   if      (forcedState == "ON")  relayNext = true;
   else if (forcedState == "OFF") relayNext = false;
-  else                            relayNext = ((tPool - tOut) <= cfg.tempThreshold);
+  else                            relayNext = ((currentPoolTemp - currentOutTemp) <= cfg.tempThreshold);
 
   if (relayNext != relayCur) {
     digitalWrite(PIN_RELAY, relayNext);
     Serial.printf("[RELAY] State change: %s\n", relayNext ? "ON" : "OFF");
   }
 
-  unsigned long now = millis();
+  if (refreshDisplay) {
+    updateDisplay(currentPoolTemp, currentOutTemp, relayNext);
+  }
+
   if (now - lastSendTime >= WS_SEND_INTERVAL) {
     lastSendTime = now;
-    sendSensorData(tPool, tOut, relayNext, cfg);
-    updateDisplay(tPool, tOut, relayNext);
+    sendSensorData(currentPoolTemp, currentOutTemp, relayNext, cfg);
   }
 }
