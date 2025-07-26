@@ -29,7 +29,9 @@ export default function PoolDashboard() {
 			const res = await fetch(`/api/sensors/${deviceId()}/settings`);
 			const data = await res.json();
 			if (data.success) {
-				const setting = data.settings.find((s: any) => s.setting === 'force_on_off');
+				const setting = data.settings.find(
+					(s: any) => s.setting === 'force_on_off'
+				);
 				setForceRelay(setting?.value === 'true');
 			}
 		} catch {}
@@ -40,7 +42,11 @@ export default function PoolDashboard() {
 		await fetch(`/api/sensors/${deviceId()}/settings`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ setting: 'force_on_off', value: String(value), type: 'boolean' }),
+			body: JSON.stringify({
+				setting: 'force_on_off',
+				value: String(value),
+				type: 'boolean',
+			}),
 		});
 		setForceRelay(value);
 		setForceRelayLoading(false);
@@ -119,7 +125,9 @@ export default function PoolDashboard() {
 				</p>
 				<div class='flex justify-center items-center gap-2 mt-2'>
 					<div
-						class={`badge ${connected() ? 'badge-success' : 'badge-error'}`}
+						class={`badge ${
+							connected() ? 'badge-success' : 'badge-error'
+						}`}
 					>
 						{connected() ? '🟢 Connected' : '🔴 Disconnected'}
 					</div>
@@ -149,7 +157,7 @@ export default function PoolDashboard() {
 									{sensorData()?.tempPool
 										? parseFloat(
 												sensorData()!.tempPool
-											).toFixed(1)
+										  ).toFixed(1)
 										: '--'}
 									°C
 								</div>
@@ -169,7 +177,7 @@ export default function PoolDashboard() {
 									{sensorData()?.tempOutdoor
 										? parseFloat(
 												sensorData()!.tempOutdoor
-											).toFixed(1)
+										  ).toFixed(1)
 										: '--'}
 									°C
 								</div>
@@ -181,14 +189,18 @@ export default function PoolDashboard() {
 					</div>
 
 					{/* System Status */}
-					<div class='grid grid-cols-1 md:grid-cols-3 gap-6'>
-						{/* Relay Status */}
-						<div class='card bg-base-100 shadow-xl'>
+					{/* <div class='grid grid-cols-1 md:grid-cols-3 gap-6'> */}
+					{/* Relay Status */}
+					{/* <div class='card bg-base-100 shadow-xl'>
 							<div class='card-body'>
 								<h2 class='card-title'>⚡ Pump Status</h2>
 								<div class='flex items-center space-x-3'>
 									<div
-										class={`badge ${sensorData()?.relayState ? 'badge-success' : 'badge-error'} badge-lg`}
+										class={`badge ${
+											sensorData()?.relayState
+												? 'badge-success'
+												: 'badge-error'
+										} badge-lg`}
 									>
 										{sensorData()?.relayState
 											? 'ON'
@@ -199,26 +211,43 @@ export default function PoolDashboard() {
 											? '🟢 Running'
 											: '🔴 Stopped'}
 									</span>
-								</div>
-								{/* Force Relay Switch */}
-								<div class="mt-4 flex items-center gap-3">
+								</div> */}
+					{/* Force Relay Switch */}
+					{/* <div class='mt-4 flex items-center gap-3'>
 									<input
-										type="checkbox"
-										class="toggle toggle-primary"
+										type='checkbox'
+										class='toggle toggle-primary'
 										checked={forceRelay()}
 										disabled={forceRelayLoading()}
-										onChange={e => updateForceRelay(e.currentTarget.checked)}
-										id="force-relay-toggle"
+										onChange={(e) =>
+											updateForceRelay(
+												e.currentTarget.checked
+											)
+										}
+										id='force-relay-toggle'
 									/>
-									<label for="force-relay-toggle" class="cursor-pointer">
-										Force Relay {forceRelay() ? <span class="text-success ml-1">ON</span> : <span class="text-error ml-1">OFF</span>}
+									<label
+										for='force-relay-toggle'
+										class='cursor-pointer'
+									>
+										Force Relay{' '}
+										{forceRelay() ? (
+											<span class='text-success ml-1'>
+												ON
+											</span>
+										) : (
+											<span class='text-error ml-1'>
+												OFF
+											</span>
+										)}
 									</label>
-									{forceRelayLoading() && <span class="loading loading-spinner loading-xs"></span>}
+									{forceRelayLoading() && (
+										<span class='loading loading-spinner loading-xs'></span>
+									)}
 								</div>
 							</div>
 						</div>
-
-						{/* WiFi Signal */}
+						WiFi Signal
 						<div class='card bg-base-100 shadow-xl'>
 							<div class='card-body'>
 								<h2 class='card-title'>📶 WiFi Signal</h2>
@@ -227,7 +256,7 @@ export default function PoolDashboard() {
 										{sensorData()?.wifiSignal !== undefined
 											? Number(
 													sensorData()!.wifiSignal
-												).toFixed(1)
+											  ).toFixed(1)
 											: '--'}{' '}
 										dBm
 									</div>
@@ -237,24 +266,23 @@ export default function PoolDashboard() {
 											-50
 												? 'badge-success'
 												: (sensorData()?.wifiSignal ||
-															0) > -70
-													? 'badge-warning'
-													: 'badge-error'
+														0) > -70
+												? 'badge-warning'
+												: 'badge-error'
 										}`}
 									>
 										{(sensorData()?.wifiSignal || 0) > -50
 											? 'Excellent'
 											: (sensorData()?.wifiSignal || 0) >
-												  -70
-												? 'Good'
-												: 'Poor'}
+											  -70
+											? 'Good'
+											: 'Poor'}
 									</div>
 								</div>
 							</div>
-						</div>
-
-						{/* System Info */}
-						<div class='card bg-base-100 shadow-xl'>
+						</div> */}
+					{/* System Info */}
+					{/* <div class='card bg-base-100 shadow-xl'>
 							<div class='card-body'>
 								<h2 class='card-title'>💾 System Info</h2>
 								<div class='space-y-2'>
@@ -266,7 +294,7 @@ export default function PoolDashboard() {
 														Number(
 															sensorData()!.uptime
 														) / 60
-													).toFixed(1)
+												  ).toFixed(1)
 												: '0'}
 											m
 										</span>
@@ -281,7 +309,7 @@ export default function PoolDashboard() {
 															sensorData()!
 																.freeHeap
 														) / 1024
-													).toFixed(1)
+												  ).toFixed(1)
 												: '0'}
 											KB
 										</span>
@@ -289,10 +317,10 @@ export default function PoolDashboard() {
 								</div>
 							</div>
 						</div>
-					</div>
+					</div> */}
 
 					{/* Device Info */}
-					<div class='card bg-base-100 shadow-xl'>
+					{/* <div class='card bg-base-100 shadow-xl'>
 						<div class='card-body'>
 							<h2 class='card-title'>🔧 Device Information</h2>
 							<div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -318,7 +346,7 @@ export default function PoolDashboard() {
 								</div>
 							</div>
 						</div>
-					</div>
+					</div> */}
 				</>
 			)}
 		</div>
