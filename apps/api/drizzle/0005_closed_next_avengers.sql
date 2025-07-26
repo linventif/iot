@@ -1,0 +1,1 @@
+ALTER TABLE `sensor_setting` RENAME COLUMN `name` TO `setting`;

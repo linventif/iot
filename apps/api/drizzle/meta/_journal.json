@@ -29,6 +29,20 @@
       "when": 1753497783952,
       "tag": "0003_puzzling_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1753498725132,
+      "tag": "0004_vengeful_weapon_omega",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1753498967129,
+      "tag": "0005_closed_next_avengers",
+      "breakpoints": true
     }
   ]
 }

@@ -1,2 +1,3 @@
 import { sensor_history } from '../schemas/SensorData';
-export { sensor_history };
+import { sensor_setting } from '../schemas/SensorSetting';
+export { sensor_history, sensor_setting };

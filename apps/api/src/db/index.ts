@@ -1,7 +1,7 @@
 // db/index.ts
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
-import { sensor_history } from './schema';
+import * as schema from './schema';
 
 const connection = await mysql.createConnection({
 	host: process.env.MYSQL_HOST || 'localhost',
@@ -11,8 +11,6 @@ const connection = await mysql.createConnection({
 });
 
 export const db = drizzle(connection, {
-	schema: {
-		sensor_history,
-	},
+	schema,
 	mode: 'default',
 });

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const sensorDataSchema = z.object({
+export const SensorDataSchema = z.object({
 	id: z.string(),
 	poolTemp: z.number(),
 	outTemp: z.number(),
@@ -8,17 +8,17 @@ export const sensorDataSchema = z.object({
 	forceState: z.enum(['ON', 'OFF', 'AUTO']),
 });
 
-export const sensorDataWebSocketSchema = sensorDataSchema.extend({
+export const SensorDataWebSocketSchema = SensorDataSchema.extend({
 	type: z.literal('sensor_data'),
 });
 
-export type sensorDataWebSocketType = z.infer<typeof sensorDataWebSocketSchema>;
+export type SensorDataWebSocketType = z.infer<typeof SensorDataWebSocketSchema>;
 
-export const sensorDataBaseSchema = sensorDataSchema.extend({
+export const SensorDataBaseSchema = SensorDataSchema.extend({
 	createdAt: z.coerce.date(),
 });
 
-export type sensorDataBaseType = z.infer<typeof sensorDataBaseSchema>;
+export type SensorDataBaseType = z.infer<typeof SensorDataBaseSchema>;
 
 import {
 	mysqlTable,

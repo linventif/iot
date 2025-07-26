@@ -1,9 +1,8 @@
-import sensor_data from '../api/events/sensor_data';
 import { db } from '../db';
 import {
 	sensor_history,
-	sensorDataBaseSchema,
-	sensorDataWebSocketSchema,
+	SensorDataBaseSchema,
+	SensorDataWebSocketSchema,
 } from '../schemas/SensorData';
 
 export class SensorData {
@@ -16,9 +15,8 @@ export class SensorData {
 		public readonly createdAt: Date
 	) {}
 
-	static fromWebSocket(data: unknown): SensorData {
-		console.log('Parsing sensor data from WebSocket:', data);
-		const parsed = sensorDataWebSocketSchema.parse(data);
+	static fromInput(data: unknown): SensorData {
+		const parsed = SensorDataWebSocketSchema.parse(data);
 		return new SensorData(
 			parsed.id,
 			parsed.poolTemp,
@@ -30,7 +28,7 @@ export class SensorData {
 	}
 
 	static fromDataBase(data: unknown): SensorData {
-		const parsed = sensorDataBaseSchema.parse(data);
+		const parsed = SensorDataBaseSchema.parse(data);
 		return new SensorData(
 			parsed.id,
 			parsed.poolTemp,
