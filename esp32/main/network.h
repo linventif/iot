@@ -12,5 +12,6 @@ extern String forcedState; // "ON", "OFF", "AUTO"
 void setupWiFi();
 void setupWebSocket(AppConfig &cfg);
 void sendSensorData(float poolTemp, float outTemp, bool relayState, const AppConfig &cfg);
+void pollWebSocket();
 
 #endif // NETWORK_H

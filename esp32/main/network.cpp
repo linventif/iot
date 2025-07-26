@@ -11,6 +11,8 @@ bool wsConnected   = false;
 WebsocketsClient webSocket;
 String forcedState = "AUTO";
 static AppConfig *currentCfg;
+static unsigned long lastWsConnectAttempt = 0;
+static const unsigned long WS_RECONNECT_INTERVAL = 5000; // ms
 
 // Messages entrants via WS
 static void onMessageCallback(WebsocketsMessage msg) {
@@ -47,6 +49,7 @@ static void onMessageCallback(WebsocketsMessage msg) {
 static void onEventsCallback(WebsocketsEvent event, String) {
   if (event == WebsocketsEvent::ConnectionOpened) {
     Serial.println("[WS EVENT] ConnectionOpened");
+    wsConnected = true;
     DynamicJsonDocument doc(256);
     doc["type"]                = CMD_TYPE_CURRENT_CFG;
     doc[CFG_KEY_DEVICE_ID]      = currentCfg->deviceId;
@@ -57,6 +60,7 @@ static void onEventsCallback(WebsocketsEvent event, String) {
     Serial.printf("[WS TX] %s\n", out.c_str());
   } else if (event == WebsocketsEvent::ConnectionClosed) {
     Serial.println("[WS EVENT] ConnectionClosed");
+    wsConnected = false;
   }
 }
 
@@ -83,6 +87,19 @@ void setupWebSocket(AppConfig &cfg) {
   webSocket.onEvent(onEventsCallback);
   wsConnected = webSocket.connect(CONFIG_WS_HOST);
   Serial.printf("[WS] connect() → %s\n", wsConnected ? "success" : "fail");
+}
+
+void pollWebSocket() {
+  webSocket.poll();
+  if (!wsConnected && wifiConnected) {
+    unsigned long now = millis();
+    if (now - lastWsConnectAttempt >= WS_RECONNECT_INTERVAL) {
+      lastWsConnectAttempt = now;
+      Serial.println("[WS] reconnecting...");
+      wsConnected = webSocket.connect(CONFIG_WS_HOST);
+      Serial.printf("[WS] connect() → %s\n", wsConnected ? "success" : "fail");
+    }
+  }
 }
 
 void sendSensorData(float poolTemp, float outTemp, bool relayState, const AppConfig &cfg) {

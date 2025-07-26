@@ -50,7 +50,7 @@ void loop() {
     WiFi.reconnect();
     Serial.println("[WIFI] reconnecting...");
   }
-  webSocket.poll();
+  pollWebSocket();
 
   unsigned long now = millis();
 
