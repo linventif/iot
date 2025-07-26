@@ -20,12 +20,6 @@ new Elysia()
 			credentials: true,
 		})
 	)
-	// Simple REST hello
-	.get('/api/hello', () => ({
-		message: 'Hello World from REST API!',
-		timestamp: new Date().toISOString(),
-		status: 'success',
-	}))
 	// WebSocket endpoint
 	.ws('/api/ws', {
 		async open(ws) {
@@ -33,8 +27,7 @@ new Elysia()
 			wsClients.set(ws, { type: 'unknown' });
 			ws.send(
 				JSON.stringify({
-					type: 'welcome',
-					message: 'WebSocket connection established.',
+					type: 'connected',
 					timestamp: new Date().toISOString(),
 				})
 			);

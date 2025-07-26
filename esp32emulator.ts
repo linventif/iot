@@ -16,25 +16,23 @@ ws.on('open', () => {
 	console.log(`[ESP] Connected to ${WS_URL}`);
 
 	setInterval(() => {
-		const t = (Date.now() - startedAt) / 1000; // secondes depuis le début
+		const t = (Date.now() - startedAt) / 1000;
 
-		// variation lente de la moyenne via sinusoïde (24h = 86400s)
-		const poolMean = 25 + 2 * Math.sin(((2 * Math.PI) / 300) * t); // 25°C ±2°C sur ~5 minutes
-		const outdoorMean = 20 + 4 * Math.sin(((2 * Math.PI) / 300) * t); // 20°C ±4°C
+		const poolMean = 25 + 2 * Math.sin(((2 * Math.PI) / 300) * t);
+		const outMean = 20 + 4 * Math.sin(((2 * Math.PI) / 300) * t);
 
-		const tempPool = gaussian(poolMean, 0.3); // bruit léger autour de la tendance
-		const tempOutdoor = gaussian(outdoorMean, 0.5);
+		const poolTemp = gaussian(poolMean, 0.3);
+		const outTemp = gaussian(outMean, 0.5);
 
-		updateRelayState(tempPool, tempOutdoor);
+		updateRelayState(poolTemp, outTemp);
 
 		const msg = {
+			type: 'sensor_data',
 			id: DEVICE_ID,
-			tempPool: round(tempPool),
-			tempOutdoor: round(tempOutdoor),
+			poolTemp: round(poolTemp),
+			outTemp: round(outTemp),
 			relayState,
-			wifiSignal: -55 + Math.floor(Math.random() * 10),
-			freeHeap: 200000 + Math.floor(Math.random() * 20000),
-			uptime: Math.floor((Date.now() - startedAt) / 1000),
+			forceState: forcedState,
 		};
 
 		ws.send(JSON.stringify(msg));
@@ -42,14 +40,32 @@ ws.on('open', () => {
 	}, WS_SEND_INTERVAL);
 });
 
+ws.on('error', (err) => {
+	console.error('[ESP] WebSocket error:', err);
+});
+
+ws.on('close', (code, reason) => {
+	console.warn(
+		`[ESP] WebSocket closed. Code: ${code}, Reason: ${reason.toString()}`
+	);
+});
+
+ws.on('unexpected-response', (req, res) => {
+	console.error(
+		'[ESP] Unexpected WS response:',
+		res.statusCode,
+		res.statusMessage
+	);
+});
+
 ws.on('message', (data) => {
 	console.log('[ESP] Server response:', data.toString());
 });
 
-function updateRelayState(tempPool: number, tempOutdoor: number) {
+function updateRelayState(poolTemp: number, outTemp: number) {
 	if (forcedState === 'ON') relayState = true;
 	else if (forcedState === 'OFF') relayState = false;
-	else relayState = tempPool - tempOutdoor <= TEMP_THRESHOLD;
+	else relayState = poolTemp - outTemp <= TEMP_THRESHOLD;
 }
 
 function round(v: number) {
