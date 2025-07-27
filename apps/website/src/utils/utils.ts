@@ -1,3 +1,6 @@
 export function getAPIUrl(): string {
-	return 'http://localhost:4001';
+	if (window.location.hostname === 'localhost') {
+		return 'http://localhost:4001';
+	}
+	return `${window.location.protocol}//${window.location.host}`;
 }
