@@ -17,7 +17,7 @@ export default function PoolDashboard() {
 	let ws: WebSocket | null = null;
 
 	async function fetchLatestSensorData(): Promise<SensorDataWebSocketType> {
-		const res = await fetch(`${getAPIUrl()}/api/sensors/latest`);
+		const res = await fetch(`${getAPIUrl()}/sensors/latest`);
 		if (!res.ok) throw new Error(res.statusText);
 		return (await res.json()) as SensorDataWebSocketType;
 	}
