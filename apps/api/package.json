@@ -3,7 +3,16 @@
 	"version": "1.0.50",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"dev": "bun run --watch src/index.ts"
+		"dev": "bun run --watch src/index.ts",
+		"start": "bun run ../../dist/apps/api/index.js",
+		"docker:build": "docker build -f Dockerfile -t auto-pool-pump-api ../../",
+		"docker:run": "docker run --rm -p 4001:4001 --name auto-pool-pump-api auto-pool-pump-api",
+		"docker:tag-ghcr": "docker tag auto-pool-pump-api ghcr.io/$USER/auto-pool-pump-api:latest",
+		"docker:push-ghcr": "docker push ghcr.io/$USER/auto-pool-pump-api:latest",
+		"clean": "rm -rf ../../dist/apps/api",
+		"prebuild": "bun run clean",
+		"build": "bunx tsc -p tsconfig.json",
+		"prestart": "bun run build"
 	},
 	"dependencies": {
 		"@schemas": "workspace:*",
@@ -19,5 +28,8 @@
 		"bun-types": "latest",
 		"drizzle-kit": "^0.31.4"
 	},
-	"module": "src/index.js"
+	"module": "src/index.js",
+	"engines": {
+		"bun": ">=1.1.0"
+	}
 }

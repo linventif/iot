@@ -1,0 +1,13 @@
+.git
+.gitignore
+**/node_modules
+**/dist
+**/.cache
+**/.turbo
+**/.vite
+**/.DS_Store
+**/*.log
+.env
+.env.*
+!.env
+.env.*
