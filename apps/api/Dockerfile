@@ -2,9 +2,6 @@
 FROM oven/bun:1.1.34-alpine AS builder
 WORKDIR /app
 
-# Copy env first (ensure available at runtime)
-COPY .env /app/.env
-
 # Copy monorepo (needed for workspace @schemas)
 COPY . .
 
@@ -19,7 +16,7 @@ RUN bun run build
 FROM oven/bun:1.1.34-alpine AS runner
 WORKDIR /app
 
-# Bring everything built plus the .env from builder
+# Bring everything built from builder
 COPY --from=builder /app /app
 
 ENV NODE_ENV=production
