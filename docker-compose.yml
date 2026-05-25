@@ -29,7 +29,9 @@ services:
 
     api:
         image: ghcr.io/linventif/iot/api:latest
-        pull_policy: always
+        build:
+            context: .
+            dockerfile: apps/api/Dockerfile
         restart: unless-stopped
         env_file: .env
         environment:
@@ -49,7 +51,9 @@ services:
 
     migrate:
         image: ghcr.io/linventif/iot/api:latest
-        pull_policy: always
+        build:
+            context: .
+            dockerfile: apps/api/Dockerfile
         restart: 'no'
         env_file: .env
         environment:

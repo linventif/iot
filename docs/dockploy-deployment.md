@@ -3,8 +3,8 @@
 Ce projet démarre les services suivants via `docker-compose.yml` :
 
 - `db` (`mariadb:11`)
-- `migrate` (`ghcr.io/linventif/iot/api:latest`) pour appliquer les migrations Drizzle
-- `api` (`ghcr.io/linventif/iot/api:latest`)
+- `migrate` (image API buildée depuis `apps/api/Dockerfile`) pour appliquer les migrations Drizzle
+- `api` (image API buildée depuis `apps/api/Dockerfile`)
 - `cloudflared` (`cloudflare/cloudflared:latest`)
 
 ## Services et ports
@@ -87,5 +87,5 @@ Le dossier `./cloudflared` est monté en lecture seule dans le conteneur :
 
 ## Notes
 
-- `pull_policy: always` est activé sur `api` et `cloudflared`, donc Dockploy tirera la dernière image à chaque redeploy.
+- `api` et `migrate` sont buildés depuis le repo afin que les migrations utilisent toujours le code du déploiement courant.
 - `cloudflared/credentials.json` est ignoré par Git (ne pas versionner ce fichier).
