@@ -18,6 +18,7 @@
 		"clean": "turbo clean && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
 		"simulate": "bun run simulate-esp32.ts",
 		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
 		"compose:up": "docker compose -f docker-compose.yml up --build --remove-orphans",

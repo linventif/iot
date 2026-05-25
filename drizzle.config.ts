@@ -8,8 +8,10 @@ export default defineConfig({
 		casing: 'camel',
 	},
 	dbCredentials: {
-		host: 'localhost',
-		port: 3306,
+		host: process.env.DRIZZLE_HOST || 'localhost',
+		port: Number(
+			process.env.DRIZZLE_PORT || process.env.MYSQL_PUBLIC_PORT || '3306',
+		),
 		user: process.env.MYSQL_USER || 'pooluser',
 		password: process.env.MYSQL_PASSWORD || 'poolpassword',
 		database: process.env.MYSQL_DATABASE || 'auto_pool_pump',

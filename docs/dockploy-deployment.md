@@ -1,8 +1,9 @@
 # Déploiement avec Dockploy
 
-Ce projet démarre 3 services via `docker-compose.yml` :
+Ce projet démarre les services suivants via `docker-compose.yml` :
 
 - `db` (`mariadb:11`)
+- `migrate` (`ghcr.io/linventif/iot/api:latest`) pour appliquer les migrations Drizzle
 - `api` (`ghcr.io/linventif/iot/api:latest`)
 - `cloudflared` (`cloudflare/cloudflared:latest`)
 
@@ -79,7 +80,8 @@ Le dossier `./cloudflared` est monté en lecture seule dans le conteneur :
 ## Vérifications rapides
 
 - `db` doit être `healthy`.
-- `api` doit démarrer après `db` (grâce à `depends_on` + healthcheck).
+- `migrate` doit se terminer avec succès après le démarrage healthy de `db`.
+- `api` doit démarrer après `migrate`.
 - Si `API_PUBLIC_PORT=4001`, tester `http://<host>:4001`.
 - Vérifier les logs `cloudflared` pour confirmer que le tunnel est `connected`.
 

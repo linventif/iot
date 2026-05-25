@@ -27,5 +27,22 @@ services:
             retries: 20
             start_period: 10s
 
+    migrate:
+        build:
+            context: .
+            dockerfile: apps/api/Dockerfile
+        restart: 'no'
+        env_file: .env
+        environment:
+            DRIZZLE_HOST: db
+            DRIZZLE_PORT: 3306
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        command: ['bun', 'run', 'db:migrate']
+        depends_on:
+            db:
+                condition: service_healthy
+
 volumes:
     db_data:

@@ -44,6 +44,22 @@ services:
         ports:
             - '${API_PUBLIC_PORT:-4001}:${API_CONTAINER_PORT:-4001}'
         depends_on:
+            migrate:
+                condition: service_completed_successfully
+
+    migrate:
+        image: ghcr.io/linventif/iot/api:latest
+        pull_policy: always
+        restart: 'no'
+        env_file: .env
+        environment:
+            DRIZZLE_HOST: ${MYSQL_HOST:-db}
+            DRIZZLE_PORT: ${MYSQL_API_PORT:-3306}
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        command: ['bun', 'run', 'db:migrate']
+        depends_on:
             db:
                 condition: service_healthy
 
