@@ -21,11 +21,11 @@
 #define DEFAULT_TEMP_THRESHOLD_ANTIBACK 0.5
 
 // Configuration WiFi
-#define WIFI_SSID              "CHANGE_ME_WIFI_SSID"
-#define WIFI_PASSWORD          "REDACTED_WIFI_PASSWORD"
+#define WIFI_SSID              "my_wifi_ssid"
+#define WIFI_PASSWORD          "CHANGE_ME_WIFI_PASSWORD"
 
 // Configuration WebSocket
-#define CONFIG_WS_HOST         "ws://192.168.1.69:4001/api/ws"
+#define CONFIG_WS_HOST         "ws://192.168.1.xx:4001/api/ws"
 
 // Pins capteurs et relais
 #define PIN_POOL_SENSOR        4    // DS18B20 piscine
