@@ -2,6 +2,10 @@
 
 // ...existing content...
 
+## Documentation
+
+- [Deployment with Dockploy](./docs/dockploy-deployment.md)
+
 ## Docker Deployment
 
 ### Building the API Image
