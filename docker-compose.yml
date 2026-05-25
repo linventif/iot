@@ -9,7 +9,7 @@ services:
             MYSQL_USER: ${MYSQL_USER}
             MYSQL_PASSWORD: ${MYSQL_PASSWORD}
         ports:
-            - '${MYSQL_PORT:-3307}:3306'
+            - '${MYSQL_PUBLIC_PORT:-3307}:${MYSQL_CONTAINER_PORT:-3306}'
         volumes:
             - db_data:/var/lib/mysql
         healthcheck:
@@ -26,6 +26,46 @@ services:
             timeout: 3s
             retries: 20
             start_period: 10s
+
+    api:
+        image: ghcr.io/linventif/iot/api:latest
+        pull_policy: always
+        restart: unless-stopped
+        env_file: .env
+        environment:
+            PORT: ${API_CONTAINER_PORT:-4001}
+            MYSQL_HOST: ${MYSQL_HOST:-db}
+            MYSQL_PORT: ${MYSQL_API_PORT:-3306}
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+            DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST:-db}:${MYSQL_API_PORT:-3306}/${MYSQL_DATABASE}
+        ports:
+            - '${API_PUBLIC_PORT:-4001}:${API_CONTAINER_PORT:-4001}'
+        depends_on:
+            db:
+                condition: service_healthy
+
+    cloudflared:
+        image: cloudflare/cloudflared:latest
+        pull_policy: always
+        restart: unless-stopped
+        env_file: .env
+        command:
+            - sh
+            - -c
+            - >
+                if [ -n "$$CLOUDFLARED_TOKEN" ]; then
+                  cloudflared tunnel --no-autoupdate run --token "$$CLOUDFLARED_TOKEN";
+                else
+                  cloudflared tunnel --no-autoupdate --config /etc/cloudflared/config.yml run;
+                fi
+        depends_on:
+            api:
+                condition: service_started
+        volumes:
+            - ./cloudflared:/etc/cloudflared:ro
 
 volumes:
     db_data:

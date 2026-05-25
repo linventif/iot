@@ -7,6 +7,9 @@ pnpm-debug.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+# Config files
+config.yml
+
 # Runtime data
 pids
 *.pid
@@ -127,3 +130,6 @@ logs
 *.hex
 *.elf
 config.h
+
+# Cloudflared tunnel credentials
+cloudflared/credentials.json

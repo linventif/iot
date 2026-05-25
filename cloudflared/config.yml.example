@@ -1,0 +1,9 @@
+# Replace values below for config-file tunnel mode.
+# For token mode, set CLOUDFLARED_TOKEN in .env and this file is optional.
+tunnel: REPLACE_WITH_TUNNEL_ID
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+    - hostname: api.example.com
+      service: http://api:4001
+    - service: http_status:404
