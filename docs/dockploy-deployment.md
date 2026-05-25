@@ -33,13 +33,8 @@ Variables de réseau/ports :
 Cloudflared :
 
 - `CLOUDFLARED_TOKEN` (recommandé en production)
-- `CLOUDFLARED_CONFIG_YAML_B64` (optionnel, config YAML complète encodée en base64)
-- `CLOUDFLARED_TUNNEL_ID` (optionnel, mode config générée)
-- `CLOUDFLARED_HOSTNAME` (optionnel, mode config générée)
-- `CLOUDFLARED_SERVICE_URL` (optionnel, défaut `http://api:4001`)
-- `CLOUDFLARED_CREDENTIALS_JSON_B64` (optionnel, credentials JSON encodé en base64)
 
-## Cloudflared: 3 modes
+## Cloudflared: 2 modes
 
 ### Mode 1 (recommandé): token
 
@@ -51,21 +46,12 @@ Cloudflared :
 Le conteneur lance automatiquement :
 
 ```sh
-cloudflared tunnel --no-autoupdate run --token "$CLOUDFLARED_TOKEN"
+cloudflared tunnel --no-autoupdate run
 ```
 
-### Mode 2: variables Dockploy uniquement (sans fichiers)
+En mode token, `cloudflared` lit `TUNNEL_TOKEN` depuis l'environnement (alimenté par `CLOUDFLARED_TOKEN`).
 
-Utilise ces variables :
-
-- `CLOUDFLARED_TUNNEL_ID`
-- `CLOUDFLARED_HOSTNAME`
-- `CLOUDFLARED_CREDENTIALS_JSON_B64`
-- `CLOUDFLARED_SERVICE_URL` (optionnel)
-
-Le conteneur génère `/tmp/config.yml` et `/tmp/credentials.json` automatiquement puis démarre le tunnel.
-
-### Mode 3: fichier config
+### Mode 2: fichier config
 
 1. Copier `cloudflared/credentials.json.example` en `cloudflared/credentials.json`.
 2. Remplacer les placeholders dans `cloudflared/config.yml`.
@@ -74,7 +60,7 @@ Le conteneur génère `/tmp/config.yml` et `/tmp/credentials.json` automatiqueme
 Le conteneur lance automatiquement :
 
 ```sh
-cloudflared tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+cloudflared tunnel --no-autoupdate run
 ```
 
 Le dossier `./cloudflared` est monté en lecture seule dans le conteneur :
@@ -101,4 +87,3 @@ Le dossier `./cloudflared` est monté en lecture seule dans le conteneur :
 
 - `pull_policy: always` est activé sur `api` et `cloudflared`, donc Dockploy tirera la dernière image à chaque redeploy.
 - `cloudflared/credentials.json` est ignoré par Git (ne pas versionner ce fichier).
-- Priorité de démarrage cloudflared: `CLOUDFLARED_TOKEN` > `CLOUDFLARED_CONFIG_YAML_B64` > variables de config générée > fichier `/etc/cloudflared/config.yml`.

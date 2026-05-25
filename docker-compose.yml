@@ -16,7 +16,7 @@ services:
             test:
                 [
                     'CMD',
-                    'mysqladmin',
+                    'mariadb-admin',
                     'ping',
                     '-h',
                     'localhost',
@@ -46,40 +46,6 @@ services:
         depends_on:
             db:
                 condition: service_healthy
-
-    cloudflared:
-        image: cloudflare/cloudflared:latest
-        pull_policy: always
-        restart: unless-stopped
-        env_file: .env
-        command:
-            - sh
-            - -c
-            - |
-                if [ -n "$$CLOUDFLARED_TOKEN" ]; then
-                  cloudflared tunnel --no-autoupdate run --token "$$CLOUDFLARED_TOKEN";
-                elif [ -n "$$CLOUDFLARED_CONFIG_YAML_B64" ]; then
-                  printf '%s' "$$CLOUDFLARED_CONFIG_YAML_B64" | base64 -d > /tmp/config.yml;
-                  cloudflared tunnel --no-autoupdate --config /tmp/config.yml run;
-                elif [ -n "$$CLOUDFLARED_TUNNEL_ID" ] && [ -n "$$CLOUDFLARED_HOSTNAME" ] && [ -n "$$CLOUDFLARED_CREDENTIALS_JSON_B64" ]; then
-                  printf '%s' "$$CLOUDFLARED_CREDENTIALS_JSON_B64" | base64 -d > /tmp/credentials.json;
-                  printf '%s\n' \
-                    "tunnel: $$CLOUDFLARED_TUNNEL_ID" \
-                    "credentials-file: /tmp/credentials.json" \
-                    "" \
-                    "ingress:" \
-                    "  - hostname: $$CLOUDFLARED_HOSTNAME" \
-                    "    service: $${CLOUDFLARED_SERVICE_URL:-http://api:4001}" \
-                    "  - service: http_status:404" > /tmp/config.yml;
-                  cloudflared tunnel --no-autoupdate --config /tmp/config.yml run;
-                else
-                  cloudflared tunnel --no-autoupdate --config /etc/cloudflared/config.yml run;
-                fi
-        depends_on:
-            api:
-                condition: service_started
-        volumes:
-            - ./cloudflared:/etc/cloudflared:ro
 
 volumes:
     db_data:
