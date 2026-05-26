@@ -87,5 +87,6 @@ Le dossier `./cloudflared` est monté en lecture seule dans le conteneur :
 
 ## Notes
 
-- `api` est buildé depuis le repo, puis `migrate` réutilise cette même image afin que les migrations utilisent le code du déploiement courant sans exporter deux builds vers le même tag.
+- `api` est buildé depuis le repo, puis `migrate` réutilise cette même image depuis `/app` afin que les migrations utilisent le code du déploiement courant sans exporter deux builds vers le même tag.
+- Si les variables MySQL sont changées après une première initialisation, le volume MariaDB existant garde les anciens utilisateurs/mots de passe. Il faut alors mettre à jour les identifiants dans MariaDB ou recréer le volume.
 - `cloudflared/credentials.json` est ignoré par Git (ne pas versionner ce fichier).
