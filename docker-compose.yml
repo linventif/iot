@@ -51,9 +51,6 @@ services:
 
     migrate:
         image: ghcr.io/linventif/iot/api:latest
-        build:
-            context: .
-            dockerfile: apps/api/Dockerfile
         restart: 'no'
         env_file: .env
         environment:

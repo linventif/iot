@@ -3,7 +3,7 @@
 Ce projet démarre les services suivants via `docker-compose.yml` :
 
 - `db` (`mariadb:11`)
-- `migrate` (image API buildée depuis `apps/api/Dockerfile`) pour appliquer les migrations Drizzle
+- `migrate` (réutilise l'image API) pour appliquer les migrations Drizzle
 - `api` (image API buildée depuis `apps/api/Dockerfile`)
 - `cloudflared` (`cloudflare/cloudflared:latest`)
 
@@ -87,5 +87,5 @@ Le dossier `./cloudflared` est monté en lecture seule dans le conteneur :
 
 ## Notes
 
-- `api` et `migrate` sont buildés depuis le repo afin que les migrations utilisent toujours le code du déploiement courant.
+- `api` est buildé depuis le repo, puis `migrate` réutilise cette même image afin que les migrations utilisent le code du déploiement courant sans exporter deux builds vers le même tag.
 - `cloudflared/credentials.json` est ignoré par Git (ne pas versionner ce fichier).
