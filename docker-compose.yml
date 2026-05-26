@@ -16,7 +16,7 @@ services:
             test:
                 [
                     'CMD-SHELL',
-                    'mariadb -h 127.0.0.1 -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE" -e "SELECT 1"',
+                    'mariadb-admin ping -h 127.0.0.1 --silent',
                 ]
             interval: 5s
             timeout: 3s
