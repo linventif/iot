@@ -6,13 +6,21 @@ import { hello } from './api/endpoints/sensor';
 import { initDatabase } from './db';
 
 const port = Number(process.env.PORT || 4001);
+const hostname = process.env.HOST || '0.0.0.0';
+const allowedOrigins = (
+	process.env.API_ALLOWED_ORIGINS ||
+	'http://localhost:4001,http://127.0.0.1:4001,http://192.168.1.69:4001,http://192.168.1.97:4001'
+)
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
 
 await initDatabase();
 
 new Elysia()
 	.use(
 		cors({
-			origin: true,
+			origin: allowedOrigins,
 			methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
 			allowedHeaders: ['Content-Type', 'Authorization'],
 			credentials: true,
@@ -20,7 +28,7 @@ new Elysia()
 	)
 	.use(routeWebSocket)
 	.use(hello)
-	.listen(port, () => {
-		console.log(`🚀 Elysia API server is up at http://localhost:${port}`);
-		console.log(`🔌 WS endpoint: ws://localhost:${port}/api/ws`);
+	.listen({ hostname, port }, () => {
+		console.log(`🚀 Elysia API server is up at http://${hostname}:${port}`);
+		console.log(`🔌 WS endpoint: ws://${hostname}:${port}/api/ws`);
 	});
