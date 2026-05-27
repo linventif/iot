@@ -3,8 +3,11 @@ import { cors } from '@elysiajs/cors';
 import 'dotenv/config';
 import { routeWebSocket } from './api/websocket';
 import { hello } from './api/endpoints/sensor';
+import { initDatabase } from './db';
 
 const port = Number(process.env.PORT || 4001);
+
+await initDatabase();
 
 new Elysia()
 	.use(
@@ -13,7 +16,7 @@ new Elysia()
 			methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
 			allowedHeaders: ['Content-Type', 'Authorization'],
 			credentials: true,
-		})
+		}) as any
 	)
 	.use(routeWebSocket)
 	.use(hello)

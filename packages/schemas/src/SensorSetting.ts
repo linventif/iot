@@ -9,11 +9,11 @@ export const SensorSettingSchema = z.object({
 
 export type SensorSettingType = z.infer<typeof SensorSettingSchema>;
 
-import { mysqlTable, varchar } from 'drizzle-orm/mysql-core';
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-export const sensor_setting = mysqlTable('sensor_setting', {
-	sensorID: varchar('sensor_id', { length: 255 }).notNull(),
-	setting: varchar('setting', { length: 255 }).notNull(),
-	value: varchar('value', { length: 255 }).notNull(),
-	type: varchar('type', { length: 255 }).notNull(),
+export const sensor_setting = sqliteTable('sensor_setting', {
+	sensorID: text('sensor_id').notNull(),
+	setting: text('setting').notNull(),
+	value: text('value').notNull(),
+	type: text('type').notNull(),
 });

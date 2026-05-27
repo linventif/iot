@@ -1,28 +1,4 @@
 services:
-    db:
-        image: mariadb:11
-        restart: unless-stopped
-        env_file: .env
-        environment:
-            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-            MYSQL_DATABASE: ${MYSQL_DATABASE}
-            MYSQL_USER: ${MYSQL_USER}
-            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-        ports:
-            - '${MYSQL_PUBLIC_PORT:-3307}:${MYSQL_CONTAINER_PORT:-3306}'
-        volumes:
-            - db_data:/var/lib/mysql
-        healthcheck:
-            test:
-                [
-                    'CMD-SHELL',
-                    'mariadb-admin ping -h 127.0.0.1 -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent',
-                ]
-            interval: 5s
-            timeout: 3s
-            retries: 20
-            start_period: 10s
-
     api:
         image: ghcr.io/linventif/iot/api:latest
         build:
@@ -32,34 +8,12 @@ services:
         env_file: .env
         environment:
             PORT: ${API_CONTAINER_PORT:-4001}
-            MYSQL_HOST: ${MYSQL_HOST:-db}
-            MYSQL_PORT: ${MYSQL_API_PORT:-3306}
-            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-            MYSQL_DATABASE: ${MYSQL_DATABASE}
-            MYSQL_USER: ${MYSQL_USER}
-            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-            DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST:-db}:${MYSQL_API_PORT:-3306}/${MYSQL_DATABASE}
+            SQLITE_FILE: ${SQLITE_FILE:-/data/iot.sqlite}
+            DATABASE_URL: ${DATABASE_URL:-file:/data/iot.sqlite}
         ports:
             - '${API_PUBLIC_PORT:-4001}:${API_CONTAINER_PORT:-4001}'
-        depends_on:
-            migrate:
-                condition: service_completed_successfully
-
-    migrate:
-        image: ghcr.io/linventif/iot/api:latest
-        working_dir: /app
-        restart: 'no'
-        env_file: .env
-        environment:
-            DRIZZLE_HOST: ${MYSQL_HOST:-db}
-            DRIZZLE_PORT: ${MYSQL_API_PORT:-3306}
-            MYSQL_DATABASE: ${MYSQL_DATABASE}
-            MYSQL_USER: ${MYSQL_USER}
-            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-        command: ['bun', 'run', 'drizzle-kit', 'migrate']
-        depends_on:
-            db:
-                condition: service_healthy
+        volumes:
+            - sqlite_data:/data
 
 volumes:
-    db_data:
+    sqlite_data:

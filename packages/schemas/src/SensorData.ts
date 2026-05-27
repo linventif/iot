@@ -21,18 +21,17 @@ export const SensorDataBaseSchema = SensorDataSchema.extend({
 export type SensorDataBaseType = z.infer<typeof SensorDataBaseSchema>;
 
 import {
-	mysqlTable,
-	varchar,
-	double,
-	boolean,
-	timestamp,
-} from 'drizzle-orm/mysql-core';
+	sqliteTable,
+	text,
+	real,
+	integer,
+} from 'drizzle-orm/sqlite-core';
 
-export const sensor_history = mysqlTable('sensor_history', {
-	id: varchar('id', { length: 255 }).notNull(),
-	poolTemp: double('pool_temp').notNull(),
-	outTemp: double('out_temp').notNull(),
-	relayState: boolean('relay_state').notNull(),
-	forceState: varchar('force_state', { length: 10 }).notNull(),
-	createdAt: timestamp('created_at').notNull().defaultNow(),
+export const sensor_history = sqliteTable('sensor_history', {
+	id: text('id').notNull(),
+	poolTemp: real('pool_temp').notNull(),
+	outTemp: real('out_temp').notNull(),
+	relayState: integer('relay_state', { mode: 'boolean' }).notNull(),
+	forceState: text('force_state').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });

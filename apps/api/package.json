@@ -17,11 +17,11 @@
 	"dependencies": {
 		"@schemas": "workspace:*",
 		"@elysiajs/cors": "^1.3.3",
+		"@libsql/client": "^0.15.10",
 		"dotenv": "^17.2.1",
 		"drizzle-orm": "^0.44.3",
 		"drizzle-zod": "^0.8.2",
 		"elysia": "latest",
-		"mysql2": "^3.14.2",
 		"zod": "^4.0.10"
 	},
 	"devDependencies": {

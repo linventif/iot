@@ -39,7 +39,7 @@ docker run --env-file production.env -p 4001:4001 auto-pool-pump-api
 Run with individual environment variables:
 
 ```bash
-docker run -e MYSQL_USER=pooluser -e MYSQL_PASSWORD=poolpassword -e MYSQL_DATABASE=auto_pool_pump -p 4001:4001 auto-pool-pump-api
+docker run -e DATABASE_URL=file:/data/iot.sqlite -v auto-pool-pump-data:/data -p 4001:4001 auto-pool-pump-api
 ```
 
 Combine both approaches:
@@ -50,11 +50,9 @@ docker run --env-file .env -e ADDITIONAL_VAR=value -p 4001:4001 auto-pool-pump-a
 
 ### Required Environment Variables
 
--   `MYSQL_USER` - Database username (default: pooluser)
--   `MYSQL_PASSWORD` - Database password (default: poolpassword)
--   `MYSQL_DATABASE` - Database name (default: auto_pool_pump)
--   `MYSQL_HOST` - Database host (default: localhost)
--   `MYSQL_PORT` - Database port (default: 3306)
+-   `DATABASE_URL` - SQLite database URL (default: `file:./data/iot.sqlite`)
+-   `SQLITE_FILE` - SQLite file path used when `DATABASE_URL` is not set
+-   `PORT` - API port inside the container (default: `4001`)
 
 ### Published Images
 
