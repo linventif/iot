@@ -5,7 +5,21 @@ import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from '@schemas/src';
 
 const sqliteFile = process.env.SQLITE_FILE || './data/iot.sqlite';
-const databaseUrl = process.env.DATABASE_URL || `file:${sqliteFile}`;
+const defaultDatabaseUrl = `file:${sqliteFile}`;
+const configuredDatabaseUrl = process.env.DATABASE_URL;
+const supportedDatabaseUrlPattern = /^(file|libsql|wss?|https?):/;
+
+const databaseUrl =
+	configuredDatabaseUrl &&
+	supportedDatabaseUrlPattern.test(configuredDatabaseUrl)
+		? configuredDatabaseUrl
+		: defaultDatabaseUrl;
+
+if (configuredDatabaseUrl && configuredDatabaseUrl !== databaseUrl) {
+	console.warn(
+		`Ignoring unsupported DATABASE_URL scheme; using ${databaseUrl}`
+	);
+}
 
 if (databaseUrl.startsWith('file:')) {
 	const filePath = databaseUrl.slice('file:'.length);

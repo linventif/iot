@@ -9,7 +9,7 @@ services:
         environment:
             PORT: ${API_CONTAINER_PORT:-4001}
             SQLITE_FILE: ${SQLITE_FILE:-/data/iot.sqlite}
-            DATABASE_URL: ${DATABASE_URL:-file:/data/iot.sqlite}
+            DATABASE_URL: file:${SQLITE_FILE:-/data/iot.sqlite}
         ports:
             - '${API_PUBLIC_PORT:-4001}:${API_CONTAINER_PORT:-4001}'
         volumes:
