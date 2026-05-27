@@ -16,7 +16,7 @@ services:
             test:
                 [
                     'CMD-SHELL',
-                    'mariadb-admin ping -h 127.0.0.1 --silent',
+                    'mariadb-admin ping -h 127.0.0.1 -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent',
                 ]
             interval: 5s
             timeout: 3s
@@ -45,23 +45,6 @@ services:
             migrate:
                 condition: service_completed_successfully
 
-    db-init:
-        image: mariadb:11
-        network_mode: service:db
-        restart: 'no'
-        env_file: .env
-        command: >
-            sh -c "mariadb -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" -e \"
-            CREATE DATABASE IF NOT EXISTS \\\`$$MYSQL_DATABASE\\\`;
-            CREATE USER IF NOT EXISTS '$$MYSQL_USER'@'%' IDENTIFIED BY '$$MYSQL_PASSWORD';
-            ALTER USER '$$MYSQL_USER'@'%' IDENTIFIED BY '$$MYSQL_PASSWORD';
-            GRANT ALL PRIVILEGES ON \\\`$$MYSQL_DATABASE\\\`.* TO '$$MYSQL_USER'@'%';
-            FLUSH PRIVILEGES;
-            \""
-        depends_on:
-            db:
-                condition: service_healthy
-
     migrate:
         image: ghcr.io/linventif/iot/api:latest
         working_dir: /app
@@ -75,8 +58,8 @@ services:
             MYSQL_PASSWORD: ${MYSQL_PASSWORD}
         command: ['bun', 'run', 'drizzle-kit', 'migrate']
         depends_on:
-            db-init:
-                condition: service_completed_successfully
+            db:
+                condition: service_healthy
 
 volumes:
     db_data:
