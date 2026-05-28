@@ -3,9 +3,11 @@ import {
 	createResource,
 	createSignal,
 	For,
+	lazy,
 	onCleanup,
 	onMount,
 	Show,
+	Suspense,
 } from 'solid-js';
 import type {
 	SensorDataBaseType,
@@ -15,6 +17,12 @@ import { getAPIUrl, getWebSocketUrl } from '../utils/utils';
 
 type SensorReading = Partial<SensorDataBaseType & SensorDataWebSocketType>;
 type HistoryLimit = '10' | '50' | 'all';
+
+const SolidApexCharts = lazy(() =>
+	import('solid-apexcharts').then((module) => ({
+		default: module.SolidApexCharts,
+	}))
+);
 
 function formatTemperature(value: unknown): string {
 	return typeof value === 'number' ? `${value.toFixed(1)} °C` : '--';
@@ -43,6 +51,13 @@ function relayStateLabel(value: SensorReading['relayState']): string {
 	if (value === true) return 'En marche';
 	if (value === false) return 'Arrêtée';
 	return '--';
+}
+
+function timestampOf(value: unknown): number | undefined {
+	if (!value) return undefined;
+
+	const date = new Date(value as string | Date);
+	return Number.isNaN(date.getTime()) ? undefined : date.getTime();
 }
 
 export default function PoolDashboard() {
@@ -88,6 +103,94 @@ export default function PoolDashboard() {
 		() => lastLiveUpdate() ?? sensorData()?.createdAt
 	);
 	const visibleHistory = createMemo(() => sensorHistory() ?? []);
+	const chartReadings = createMemo(() =>
+		visibleHistory()
+			.map((reading) => ({
+				...reading,
+				timestamp: timestampOf(reading.createdAt),
+			}))
+			.filter((reading) => reading.timestamp)
+			.sort((a, b) => a.timestamp! - b.timestamp!)
+	);
+	const temperatureSeries = createMemo(() => [
+		{
+			name: 'Température Piscine',
+			data: chartReadings()
+				.filter((reading) => typeof reading.poolTemp === 'number')
+				.map((reading) => ({
+					x: reading.timestamp,
+					y: Number(reading.poolTemp!.toFixed(2)),
+				})),
+		},
+		{
+			name: 'Température Tuyaux Toit',
+			data: chartReadings()
+				.filter((reading) => typeof reading.outTemp === 'number')
+				.map((reading) => ({
+					x: reading.timestamp,
+					y: Number(reading.outTemp!.toFixed(2)),
+				})),
+		},
+	]);
+	const temperatureChartOptions = createMemo(() => ({
+		chart: {
+			id: 'pool-temperature-history',
+			toolbar: {
+				show: true,
+				tools: {
+					download: true,
+					selection: true,
+					zoom: true,
+					zoomin: true,
+					zoomout: true,
+					pan: true,
+					reset: true,
+				},
+			},
+			zoom: {
+				enabled: true,
+			},
+		},
+		colors: ['#2563eb', '#f97316'],
+		dataLabels: {
+			enabled: false,
+		},
+		grid: {
+			borderColor: 'rgba(148, 163, 184, 0.35)',
+			strokeDashArray: 4,
+		},
+		legend: {
+			position: 'top',
+			horizontalAlign: 'left',
+		},
+		noData: {
+			text: 'Aucune mesure disponible',
+		},
+		stroke: {
+			curve: 'smooth',
+			width: 3,
+		},
+		tooltip: {
+			shared: true,
+			x: {
+				format: 'dd/MM/yyyy HH:mm:ss',
+			},
+			y: {
+				formatter: (value: number) => `${value.toFixed(1)} °C`,
+			},
+		},
+		xaxis: {
+			type: 'datetime',
+			labels: {
+				datetimeUTC: false,
+			},
+		},
+		yaxis: {
+			labels: {
+				formatter: (value: number) => `${value.toFixed(1)} °C`,
+			},
+		},
+	}));
 
 	const connectWebSocket = () => {
 		clearTimeout(reconnectTimer);
@@ -198,25 +301,25 @@ export default function PoolDashboard() {
 			<div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
 				<section class='card bg-primary text-primary-content'>
 					<div class='card-body'>
-							<h2 class='card-title text-xl'>Température Piscine</h2>
+						<h2 class='card-title text-xl'>Température Piscine</h2>
 						<div class='text-5xl font-bold'>
 							<Show when={!sensorData.loading} fallback='--'>
 								{formatTemperature(poolTemp())}
 							</Show>
 						</div>
-							<p class='opacity-80'>Dernière mesure piscine</p>
+						<p class='opacity-80'>Dernière mesure piscine</p>
 					</div>
 				</section>
 
 				<section class='card bg-secondary text-secondary-content'>
 					<div class='card-body'>
-							<h2 class='card-title text-xl'>Température Tuyaux Toit</h2>
+						<h2 class='card-title text-xl'>Température Tuyaux Toit</h2>
 						<div class='text-5xl font-bold'>
 							<Show when={!sensorData.loading} fallback='--'>
 								{formatTemperature(outTemp())}
 							</Show>
 						</div>
-							<p class='opacity-80'>Dernière mesure tuyaux toit</p>
+						<p class='opacity-80'>Dernière mesure tuyaux toit</p>
 					</div>
 				</section>
 			</div>
@@ -270,6 +373,36 @@ export default function PoolDashboard() {
 					</div>
 				</div>
 			</div>
+
+			<section class='card bg-base-100 shadow'>
+				<div class='card-body'>
+					<div class='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+						<div>
+							<h2 class='card-title'>Températures dans le temps</h2>
+							<p class='text-sm text-base-content/70'>
+								Évolution piscine et tuyaux toit
+							</p>
+						</div>
+					</div>
+					<div class='min-h-80'>
+						<Suspense
+							fallback={
+								<div class='flex min-h-80 items-center justify-center text-base-content/60'>
+									Chargement du graphique
+								</div>
+							}
+						>
+							<SolidApexCharts
+								type='line'
+								height={320}
+								width='100%'
+								options={temperatureChartOptions()}
+								series={temperatureSeries()}
+							/>
+						</Suspense>
+					</div>
+				</div>
+			</section>
 
 			<section class='card bg-base-100 shadow'>
 				<div class='card-body'>
