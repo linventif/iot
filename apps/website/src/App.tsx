@@ -1,6 +1,5 @@
 import { Route, Router } from '@solidjs/router';
 import { createEffect, JSX } from 'solid-js';
-import { render } from 'solid-js/web';
 
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
@@ -14,7 +13,7 @@ interface AppProps {
 	children?: JSX.Element;
 }
 
-const App = (props: AppProps) => {
+const Layout = (props: AppProps) => {
 	createEffect(() => {
 		const initFlyonUI = async () => {
 			await loadFlyonUI();
@@ -41,15 +40,14 @@ const App = (props: AppProps) => {
 	);
 };
 
-render(
-	() => (
-		<Router root={App}>
+const App = () => {
+	return (
+		<Router root={Layout}>
 			<Route path='/' component={Home} />
 			<Route path='/monitor/pool' component={PoolDashboard} />
 			<Route path='*404' component={NotFound} />
 		</Router>
-	),
-	document.getElementById('root') as HTMLElement
-);
+	);
+};
 
 export default App;

@@ -18,11 +18,10 @@ const NotFound: Component = () => {
 				{/* Error Message */}
 				<div class='space-y-6 mb-8'>
 					<h1 class='text-4xl font-bold text-base-content'>
-						Oops! Page Not Found
+						Page introuvable
 					</h1>
 					<p class='text-xl text-base-content/70'>
-						The page you're looking for seems to have taken a detour
-						into the digital void.
+						La page demandee n'existe pas ou a ete deplacee.
 					</p>
 				</div>
 
@@ -64,10 +63,10 @@ const NotFound: Component = () => {
 								</svg>
 							</div>
 							<h3 class='card-title text-lg justify-center mb-2'>
-								Go Home
+								Accueil
 							</h3>
 							<p class='text-base-content/60 mb-4'>
-								Return to the main dashboard
+								Retourner au tableau de bord principal
 							</p>
 							<A href='/' class='btn btn-primary'>
 								<svg
@@ -81,7 +80,7 @@ const NotFound: Component = () => {
 										clip-rule='evenodd'
 									/>
 								</svg>
-								Take Me Home
+								Retour a l'accueil
 							</A>
 						</div>
 					</div>
@@ -103,11 +102,10 @@ const NotFound: Component = () => {
 						></path>
 					</svg>
 					<div class='text-left'>
-						<h4 class='font-semibold'>Did you know?</h4>
+						<h4 class='font-semibold'>Information</h4>
 						<p class='text-sm'>
-							The first 404 error was created in 1993 at CERN.
-							You've just experienced a piece of internet history!
-							🌐
+							Utilise le lien d'accueil pour revenir aux moniteurs
+							disponibles.
 						</p>
 					</div>
 				</div>

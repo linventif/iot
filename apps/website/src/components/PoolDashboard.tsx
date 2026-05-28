@@ -1,348 +1,268 @@
 import {
-	createSignal,
-	onMount,
-	onCleanup,
+	createMemo,
 	createResource,
+	createSignal,
+	onCleanup,
+	onMount,
 	Show,
 } from 'solid-js';
-import { SensorDataWebSocketType } from '@schemas/src/SensorData';
-import { getAPIUrl } from '../utils/utils';
+import type {
+	SensorDataBaseType,
+	SensorDataWebSocketType,
+} from '@schemas/src/SensorData';
+import { getAPIUrl, getWebSocketUrl } from '../utils/utils';
+
+type SensorReading = Partial<SensorDataBaseType & SensorDataWebSocketType>;
+
+function formatTemperature(value: unknown): string {
+	return typeof value === 'number' ? `${value.toFixed(1)} °C` : '--';
+}
+
+function formatDate(value: unknown): string {
+	if (!value) return 'Aucune mesure';
+
+	const date = new Date(value as string | Date);
+	if (Number.isNaN(date.getTime())) return 'Aucune mesure';
+
+	return new Intl.DateTimeFormat('fr-FR', {
+		dateStyle: 'short',
+		timeStyle: 'medium',
+	}).format(date);
+}
+
+function forceStateLabel(value: SensorReading['forceState']): string {
+	if (value === 'ON') return 'Forcée ON';
+	if (value === 'OFF') return 'Forcée OFF';
+	if (value === 'AUTO') return 'Automatique';
+	return '--';
+}
 
 export default function PoolDashboard() {
-	// const [loading, setLoading] = createSignal(true);
-	// const [lastUpdate, setLastUpdate] = createSignal<string>('');
 	const [connected, setConnected] = createSignal(false);
-	const [forceRelay, setForceRelay] = createSignal(false);
-	const [forceRelayLoading, setForceRelayLoading] = createSignal(false);
+	const [lastLiveUpdate, setLastLiveUpdate] = createSignal<Date | null>(null);
+	const [connectionError, setConnectionError] = createSignal<string | null>(
+		null
+	);
 	let ws: WebSocket | null = null;
+	let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+	let shouldReconnect = true;
 
-	async function fetchLatestSensorData(): Promise<SensorDataWebSocketType> {
+	async function fetchLatestSensorData(): Promise<SensorReading> {
 		const res = await fetch(`${getAPIUrl()}/sensors/latest`);
 		if (!res.ok) throw new Error(res.statusText);
-		return (await res.json()) as SensorDataWebSocketType;
+		return (await res.json()) as SensorReading;
 	}
 
-	const [
-		sensorData,
-		{ refetch: refetchSensorData, mutate: mutateSensorData },
-	] = createResource<SensorDataWebSocketType>(fetchLatestSensorData);
+	const [sensorData, { refetch, mutate }] =
+		createResource<SensorReading>(fetchLatestSensorData);
 
-	// const fetchForceRelay = async () => {
-	// 	try {
-	// 		const res = await fetch(`/api/sensors/${deviceId()}/settings`);
-	// 		const data = await res.json();
-	// 		if (data.success) {
-	// 			const setting = data.settings.find(
-	// 				(s: any) => s.setting === 'force_on_off'
-	// 			);
-	// 			setForceRelay(setting?.value === 'true');
-	// 		}
-	// 	} catch {}
-	// };
-
-	// const updateForceRelay = async (value: boolean) => {
-	// 	setForceRelayLoading(true);
-	// 	await fetch(`/api/sensors/${deviceId()}/settings`, {
-	// 		method: 'POST',
-	// 		headers: { 'Content-Type': 'application/json' },
-	// 		body: JSON.stringify({
-	// 			setting: 'force_on_off',
-	// 			value: String(value),
-	// 			type: 'boolean',
-	// 		}),
-	// 	});
-	// 	setForceRelay(value);
-	// 	setForceRelayLoading(false);
-	// };
-
-	// const fetchLatestData = async () => {
-	// 	try {
-	// 		const response = await fetch('/api/sensors/latest');
-	// 		const result = await response.json();
-	// 		if (result.success && result.data) {
-	// 			setSensorData(result.data);
-	// 			setLastUpdate(new Date().toLocaleTimeString());
-	// 		}
-	// 	} catch (error) {
-	// 		console.error('Failed to fetch sensor data:', error);
-	// 	} finally {
-	// 		setLoading(false);
-	// 	}
-	// };
+	const poolTemp = createMemo(() => sensorData()?.poolTemp);
+	const outTemp = createMemo(() => sensorData()?.outTemp);
+	const tempGap = createMemo(() => {
+		const pool = poolTemp();
+		const outside = outTemp();
+		return typeof pool === 'number' && typeof outside === 'number'
+			? pool - outside
+			: undefined;
+	});
+	const latestUpdate = createMemo(
+		() => lastLiveUpdate() ?? sensorData()?.createdAt
+	);
 
 	const connectWebSocket = () => {
-		const wsUrl = `ws://${window.location.hostname}:4001/api/ws`;
-		ws = new WebSocket(wsUrl);
+		clearTimeout(reconnectTimer);
+
+		try {
+			ws = new WebSocket(getWebSocketUrl());
+		} catch (error) {
+			setConnected(false);
+			setConnectionError('Connexion temps réel indisponible');
+			reconnectTimer = setTimeout(connectWebSocket, 3000);
+			return;
+		}
 
 		ws.onopen = () => {
 			setConnected(true);
-			// Register as website client
+			setConnectionError(null);
 			ws?.send(
 				JSON.stringify({ type: 'register', clientType: 'website' })
 			);
+			void refetch();
 		};
 
 		ws.onmessage = (event) => {
 			try {
 				const data = JSON.parse(event.data);
 				if (data.type === 'sensor_data') {
-					// mutateSensorData(data as SensorDataWebSocketType);
-					// setLastUpdate(new Date().toLocaleTimeString());
-					// setLoading(false);
+					const receivedAt = new Date();
+					setLastLiveUpdate(receivedAt);
+					mutate({
+						...data,
+						createdAt: receivedAt,
+					});
 				}
 			} catch (error) {
-				console.error('Error parsing WebSocket message:', error);
+				console.error('Erreur pendant la lecture du message temps réel:', error);
 			}
 		};
 
 		ws.onclose = () => {
 			setConnected(false);
-			setTimeout(connectWebSocket, 3000);
+			if (shouldReconnect) {
+				reconnectTimer = setTimeout(connectWebSocket, 3000);
+			}
 		};
 
 		ws.onerror = () => {
 			setConnected(false);
+			setConnectionError('Erreur de connexion temps réel');
 		};
 	};
 
 	onMount(() => {
 		connectWebSocket();
 		onCleanup(() => {
-			// clearInterval(interval);
-			if (ws) ws.close();
+			shouldReconnect = false;
+			clearTimeout(reconnectTimer);
+			ws?.close();
 		});
 	});
 
 	return (
-		<div class='container mx-auto p-6 space-y-6'>
-			{/* Header */}
-			<div class='text-center'>
-				<h1 class='text-4xl font-bold text-base-content mb-2'>
-					🏊‍♂️ Pool Monitor
-				</h1>
-				<p class='text-base-content/70'>
-					Real-time pool monitoring system
-				</p>
-				<div class='flex justify-center items-center gap-2 mt-2'>
+		<div class='container mx-auto max-w-6xl p-4 md:p-6 space-y-6'>
+			<header class='flex flex-col gap-4 md:flex-row md:items-end md:justify-between'>
+				<div>
+					<h1 class='text-3xl md:text-4xl font-bold text-base-content'>
+						Suivi de la piscine
+					</h1>
+					<p class='text-base-content/70 mt-2'>
+						Températures, pompe et dernières mesures en temps réel.
+					</p>
+				</div>
+				<div class='flex flex-wrap items-center gap-2'>
 					<div
 						class={`badge ${
 							connected() ? 'badge-success' : 'badge-error'
+						} badge-lg`}
+					>
+						{connected() ? 'Temps réel actif' : 'Temps réel coupé'}
+					</div>
+					<button
+						type='button'
+						class='btn btn-sm btn-outline'
+						onClick={() => refetch()}
+						disabled={sensorData.loading}
+					>
+						Actualiser
+					</button>
+				</div>
+			</header>
+
+			<Show when={connectionError()}>
+				<div class='alert alert-warning'>
+					<span>{connectionError()}</span>
+				</div>
+			</Show>
+
+			<div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
+				<section class='card bg-primary text-primary-content'>
+					<div class='card-body'>
+						<h2 class='card-title text-xl'>Température de l'eau</h2>
+						<div class='text-5xl font-bold'>
+							<Show when={!sensorData.loading} fallback='--'>
+								{formatTemperature(poolTemp())}
+							</Show>
+						</div>
+						<p class='opacity-80'>Dernière mesure du bassin</p>
+					</div>
+				</section>
+
+				<section class='card bg-secondary text-secondary-content'>
+					<div class='card-body'>
+						<h2 class='card-title text-xl'>Température extérieure</h2>
+						<div class='text-5xl font-bold'>
+							<Show when={!sensorData.loading} fallback='--'>
+								{formatTemperature(outTemp())}
+							</Show>
+						</div>
+						<p class='opacity-80'>Air ambiant autour de la piscine</p>
+					</div>
+				</section>
+			</div>
+
+			<div class='stats stats-vertical lg:stats-horizontal shadow w-full'>
+				<div class='stat'>
+					<div class='stat-title'>Écart eau / air</div>
+					<div class='stat-value text-2xl'>
+						{typeof tempGap() === 'number'
+							? `${tempGap()!.toFixed(1)} °C`
+							: '--'}
+					</div>
+					<div class='stat-desc'>Différence de température</div>
+				</div>
+
+				<div class='stat'>
+					<div class='stat-title'>Pompe</div>
+					<div
+						class={`stat-value text-2xl ${
+							typeof sensorData()?.relayState !== 'boolean'
+								? ''
+								: sensorData()?.relayState
+								? 'text-success'
+								: 'text-error'
 						}`}
 					>
-						{connected() ? '🟢 Connected' : '🔴 Disconnected'}
+						{typeof sensorData()?.relayState === 'boolean'
+							? sensorData()?.relayState
+								? 'En marche'
+								: 'Arrêtée'
+							: '--'}
 					</div>
-					{/* {lastUpdate() && (
-						<p class='text-sm text-base-content/50 mt-0'>
-							Last updated: {lastUpdate()}
-						</p>
-					)} */}
-				</div>
-			</div>
-
-			{/* {loading() ? (
-				<div class='flex justify-center items-center h-64'>
-					<span class='loading loading-spinner loading-lg'></span>
-				</div>
-			) : (
-				<> */}
-			{/* Temperature Cards */}
-			<div class='grid grid-cols-1 md:grid-cols-2 gap-6'>
-				{/* Pool Temperature */}
-				<div class='card bg-primary text-primary-content'>
-					<div class='card-body'>
-						<h2 class='card-title text-2xl'>🌊 Pool Temperature</h2>
-						<div class='text-5xl font-bold'>
-							<Show when={!sensorData.loading} fallback='--'>
-								{sensorData()?.poolTemp !== undefined
-									? Number(sensorData()!.poolTemp).toFixed(1)
-									: '--'}
-								°C
-							</Show>
-						</div>
-						<p class='opacity-80'>Current pool water temperature</p>
-					</div>
+					<div class='stat-desc'>État du relais</div>
 				</div>
 
-				{/* Outdoor Temperature */}
-				<div class='card bg-secondary text-secondary-content'>
-					<div class='card-body'>
-						<h2 class='card-title text-2xl'>
-							🌡️ Outdoor Temperature
-						</h2>
-						<div class='text-5xl font-bold'>
-							<Show when={!sensorData.loading} fallback='--'>
-								{sensorData()?.outTemp !== undefined
-									? Number(sensorData()!.outTemp).toFixed(1)
-									: '--'}
-								°C
-							</Show>
-						</div>
-						<p class='opacity-80'>Ambient air temperature</p>
+				<div class='stat'>
+					<div class='stat-title'>Mode</div>
+					<div class='stat-value text-2xl'>
+						{forceStateLabel(sensorData()?.forceState)}
+					</div>
+					<div class='stat-desc'>Commande actuelle</div>
+				</div>
+
+				<div class='stat'>
+					<div class='stat-title'>Dernière mise à jour</div>
+					<div class='stat-value text-lg'>
+						{formatDate(latestUpdate())}
+					</div>
+					<div class='stat-desc'>
+						{lastLiveUpdate() ? 'Reçue en direct' : 'Chargée depuis l’API'}
 					</div>
 				</div>
 			</div>
 
-			{/* System Status */}
-			{/* <div class='grid grid-cols-1 md:grid-cols-3 gap-6'> */}
-			{/* Relay Status */}
-			{/* <div class='card bg-base-100 shadow-xl'>
-							<div class='card-body'>
-								<h2 class='card-title'>⚡ Pump Status</h2>
-								<div class='flex items-center space-x-3'>
-									<div
-										class={`badge ${
-											sensorData()?.relayState
-												? 'badge-success'
-												: 'badge-error'
-										} badge-lg`}
-									>
-										{sensorData()?.relayState
-											? 'ON'
-											: 'OFF'}
-									</div>
-									<span class='text-lg'>
-										{sensorData()?.relayState
-											? '🟢 Running'
-											: '🔴 Stopped'}
-									</span>
-								</div> */}
-			{/* Force Relay Switch */}
-			{/* <div class='mt-4 flex items-center gap-3'>
-									<input
-										type='checkbox'
-										class='toggle toggle-primary'
-										checked={forceRelay()}
-										disabled={forceRelayLoading()}
-										onChange={(e) =>
-											updateForceRelay(
-												e.currentTarget.checked
-											)
-										}
-										id='force-relay-toggle'
-									/>
-									<label
-										for='force-relay-toggle'
-										class='cursor-pointer'
-									>
-										Force Relay{' '}
-										{forceRelay() ? (
-											<span class='text-success ml-1'>
-												ON
-											</span>
-										) : (
-											<span class='text-error ml-1'>
-												OFF
-											</span>
-										)}
-									</label>
-									{forceRelayLoading() && (
-										<span class='loading loading-spinner loading-xs'></span>
-									)}
-								</div>
-							</div>
+			<section class='card bg-base-100 shadow'>
+				<div class='card-body'>
+					<h2 class='card-title'>Détails de la dernière mesure</h2>
+					<div class='grid grid-cols-1 md:grid-cols-2 gap-3 text-sm'>
+						<div class='flex justify-between gap-4'>
+							<span class='text-base-content/70'>Identifiant capteur</span>
+							<span class='font-mono'>{sensorData()?.id ?? '--'}</span>
 						</div>
-						WiFi Signal
-						<div class='card bg-base-100 shadow-xl'>
-							<div class='card-body'>
-								<h2 class='card-title'>📶 WiFi Signal</h2>
-								<div class='flex items-center space-x-3'>
-									<div class='text-2xl font-bold'>
-										{sensorData()?.wifiSignal !== undefined
-											? Number(
-													sensorData()!.wifiSignal
-											  ).toFixed(1)
-											: '--'}{' '}
-										dBm
-									</div>
-									<div
-										class={`badge ${
-											(sensorData()?.wifiSignal || 0) >
-											-50
-												? 'badge-success'
-												: (sensorData()?.wifiSignal ||
-														0) > -70
-												? 'badge-warning'
-												: 'badge-error'
-										}`}
-									>
-										{(sensorData()?.wifiSignal || 0) > -50
-											? 'Excellent'
-											: (sensorData()?.wifiSignal || 0) >
-											  -70
-											? 'Good'
-											: 'Poor'}
-									</div>
-								</div>
-							</div>
-						</div> */}
-			{/* System Info */}
-			{/* <div class='card bg-base-100 shadow-xl'>
-							<div class='card-body'>
-								<h2 class='card-title'>💾 System Info</h2>
-								<div class='space-y-2'>
-									<div class='flex justify-between'>
-										<span>Uptime:</span>
-										<span class='font-mono'>
-											{sensorData()?.uptime !== undefined
-												? (
-														Number(
-															sensorData()!.uptime
-														) / 60
-												  ).toFixed(1)
-												: '0'}
-											m
-										</span>
-									</div>
-									<div class='flex justify-between'>
-										<span>Free Heap:</span>
-										<span class='font-mono'>
-											{sensorData()?.freeHeap !==
-											undefined
-												? (
-														Number(
-															sensorData()!
-																.freeHeap
-														) / 1024
-												  ).toFixed(1)
-												: '0'}
-											KB
-										</span>
-									</div>
-								</div>
-							</div>
+						<div class='flex justify-between gap-4'>
+							<span class='text-base-content/70'>Horodatage</span>
+							<span>{formatDate(sensorData()?.createdAt)}</span>
 						</div>
-					</div> */}
-
-			{/* Device Info */}
-			{/* <div class='card bg-base-100 shadow-xl'>
-						<div class='card-body'>
-							<h2 class='card-title'>🔧 Device Information</h2>
-							<div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
-								<div>
-									<span class='font-semibold'>
-										Device ID:
-									</span>
-									<span class='ml-2 font-mono text-sm'>
-										{sensorData()?.deviceId || 'Unknown'}
-									</span>
-								</div>
-								<div>
-									<span class='font-semibold'>
-										Last Reading:
-									</span>
-									<span class='ml-2'>
-										{sensorData()?.createdAt
-											? new Date(
-													sensorData()!.createdAt
-												).toLocaleString()
-											: 'Never'}
-									</span>
-								</div>
-							</div>
+						<div class='flex justify-between gap-4'>
+							<span class='text-base-content/70'>Eau</span>
+							<span>{formatTemperature(poolTemp())}</span>
 						</div>
-					</div> */}
-			{/* </> */}
-			{/* )} */}
+						<div class='flex justify-between gap-4'>
+							<span class='text-base-content/70'>Air</span>
+							<span>{formatTemperature(outTemp())}</span>
+						</div>
+					</div>
+				</div>
+			</section>
 		</div>
 	);
 }

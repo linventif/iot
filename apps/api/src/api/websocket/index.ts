@@ -60,6 +60,13 @@ export const routeWebSocket = new Elysia().ws('/api/ws', {
 			return;
 		}
 
+		if (data.type === 'register') {
+			wsClients.set(ws, {
+				type: data.clientType === 'website' ? 'website' : 'device',
+				deviceId: data.deviceId,
+			});
+		}
+
 		if (!events[data.type]) {
 			console.error(`[WS] Unknown event type: ${data.type}`);
 			ws.send(
@@ -74,6 +81,13 @@ export const routeWebSocket = new Elysia().ws('/api/ws', {
 		try {
 			console.log(`[WS] Received event: ${data.type}`);
 			await events[data.type].onData(ws, data);
+			if (data.type === 'sensor_data') {
+				for (const [client, clientInfo] of wsClients) {
+					if (clientInfo.type === 'website') {
+						client.send(JSON.stringify(data));
+					}
+				}
+			}
 		} catch (error) {
 			console.error(`[WS] Error in event ${data.type}:`, error);
 			ws.send(
