@@ -198,25 +198,25 @@ export default function PoolDashboard() {
 			<div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
 				<section class='card bg-primary text-primary-content'>
 					<div class='card-body'>
-						<h2 class='card-title text-xl'>Température de l'eau</h2>
+							<h2 class='card-title text-xl'>Température Piscine</h2>
 						<div class='text-5xl font-bold'>
 							<Show when={!sensorData.loading} fallback='--'>
 								{formatTemperature(poolTemp())}
 							</Show>
 						</div>
-						<p class='opacity-80'>Dernière mesure du bassin</p>
+							<p class='opacity-80'>Dernière mesure piscine</p>
 					</div>
 				</section>
 
 				<section class='card bg-secondary text-secondary-content'>
 					<div class='card-body'>
-						<h2 class='card-title text-xl'>Température extérieure</h2>
+							<h2 class='card-title text-xl'>Température Tuyaux Toit</h2>
 						<div class='text-5xl font-bold'>
 							<Show when={!sensorData.loading} fallback='--'>
 								{formatTemperature(outTemp())}
 							</Show>
 						</div>
-						<p class='opacity-80'>Air ambiant autour de la piscine</p>
+							<p class='opacity-80'>Dernière mesure tuyaux toit</p>
 					</div>
 				</section>
 			</div>
