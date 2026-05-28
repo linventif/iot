@@ -1,10 +1,28 @@
 import Elysia from 'elysia';
-import { getLatestSensorData } from '../../classes/SensorData';
+import {
+	getLatestSensorData,
+	getSensorDataHistory,
+} from '../../classes/SensorData';
 
 export const hello = new Elysia()
 	.get('/', () => 'Hello World!')
 	.get('/api/sensors/latest', async ({ query }) => {
 		return await getLatestSensorData();
+	})
+	.get('/api/sensors/history', async ({ query }) => {
+		const limitParam = query.limit?.toString().toLowerCase();
+
+		if (limitParam === 'all') {
+			return await getSensorDataHistory();
+		}
+
+		const parsedLimit = Number.parseInt(limitParam || '50', 10);
+		const limit =
+			Number.isFinite(parsedLimit) && parsedLimit > 0
+				? Math.min(parsedLimit, 500)
+				: 50;
+
+		return await getSensorDataHistory(limit);
 	});
 
 // // REST: latest sensor reading

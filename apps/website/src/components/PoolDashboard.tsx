@@ -2,6 +2,7 @@ import {
 	createMemo,
 	createResource,
 	createSignal,
+	For,
 	onCleanup,
 	onMount,
 	Show,
@@ -13,6 +14,7 @@ import type {
 import { getAPIUrl, getWebSocketUrl } from '../utils/utils';
 
 type SensorReading = Partial<SensorDataBaseType & SensorDataWebSocketType>;
+type HistoryLimit = '10' | '50' | 'all';
 
 function formatTemperature(value: unknown): string {
 	return typeof value === 'number' ? `${value.toFixed(1)} °C` : '--';
@@ -37,9 +39,16 @@ function forceStateLabel(value: SensorReading['forceState']): string {
 	return '--';
 }
 
+function relayStateLabel(value: SensorReading['relayState']): string {
+	if (value === true) return 'En marche';
+	if (value === false) return 'Arrêtée';
+	return '--';
+}
+
 export default function PoolDashboard() {
 	const [connected, setConnected] = createSignal(false);
 	const [lastLiveUpdate, setLastLiveUpdate] = createSignal<Date | null>(null);
+	const [historyLimit, setHistoryLimit] = createSignal<HistoryLimit>('10');
 	const [connectionError, setConnectionError] = createSignal<string | null>(
 		null
 	);
@@ -53,8 +62,18 @@ export default function PoolDashboard() {
 		return (await res.json()) as SensorReading;
 	}
 
+	async function fetchSensorHistory(
+		limit: HistoryLimit
+	): Promise<SensorReading[]> {
+		const res = await fetch(`${getAPIUrl()}/sensors/history?limit=${limit}`);
+		if (!res.ok) throw new Error(res.statusText);
+		return (await res.json()) as SensorReading[];
+	}
+
 	const [sensorData, { refetch, mutate }] =
 		createResource<SensorReading>(fetchLatestSensorData);
+	const [sensorHistory, { refetch: refetchHistory, mutate: mutateHistory }] =
+		createResource(historyLimit, fetchSensorHistory);
 
 	const poolTemp = createMemo(() => sensorData()?.poolTemp);
 	const outTemp = createMemo(() => sensorData()?.outTemp);
@@ -68,6 +87,7 @@ export default function PoolDashboard() {
 	const latestUpdate = createMemo(
 		() => lastLiveUpdate() ?? sensorData()?.createdAt
 	);
+	const visibleHistory = createMemo(() => sensorHistory() ?? []);
 
 	const connectWebSocket = () => {
 		clearTimeout(reconnectTimer);
@@ -88,6 +108,7 @@ export default function PoolDashboard() {
 				JSON.stringify({ type: 'register', clientType: 'website' })
 			);
 			void refetch();
+			void refetchHistory();
 		};
 
 		ws.onmessage = (event) => {
@@ -95,10 +116,17 @@ export default function PoolDashboard() {
 				const data = JSON.parse(event.data);
 				if (data.type === 'sensor_data') {
 					const receivedAt = new Date();
-					setLastLiveUpdate(receivedAt);
-					mutate({
+					const reading = {
 						...data,
 						createdAt: receivedAt,
+					};
+					setLastLiveUpdate(receivedAt);
+					mutate(reading);
+					mutateHistory((current = []) => {
+						const next = [reading, ...current];
+						return historyLimit() === 'all'
+							? next
+							: next.slice(0, Number(historyLimit()));
 					});
 				}
 			} catch (error) {
@@ -150,8 +178,11 @@ export default function PoolDashboard() {
 					<button
 						type='button'
 						class='btn btn-sm btn-outline'
-						onClick={() => refetch()}
-						disabled={sensorData.loading}
+						onClick={() => {
+							void refetch();
+							void refetchHistory();
+						}}
+						disabled={sensorData.loading || sensorHistory.loading}
 					>
 						Actualiser
 					</button>
@@ -242,7 +273,21 @@ export default function PoolDashboard() {
 
 			<section class='card bg-base-100 shadow'>
 				<div class='card-body'>
-					<h2 class='card-title'>Détails de la dernière mesure</h2>
+					<div class='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+						<h2 class='card-title'>Détails de la dernière mesure</h2>
+						<select
+							class='select select-sm select-bordered w-full md:w-44'
+							value={historyLimit()}
+							onChange={(event) =>
+								setHistoryLimit(event.currentTarget.value as HistoryLimit)
+							}
+							aria-label='Nombre de mesures affichées'
+						>
+							<option value='10'>10 mesures</option>
+							<option value='50'>50 mesures</option>
+							<option value='all'>Toutes les mesures</option>
+						</select>
+					</div>
 					<div class='grid grid-cols-1 md:grid-cols-2 gap-3 text-sm'>
 						<div class='flex justify-between gap-4'>
 							<span class='text-base-content/70'>Identifiant capteur</span>
@@ -260,6 +305,45 @@ export default function PoolDashboard() {
 							<span class='text-base-content/70'>Air</span>
 							<span>{formatTemperature(outTemp())}</span>
 						</div>
+					</div>
+					<div class='overflow-x-auto mt-4'>
+						<table class='table table-sm'>
+							<thead>
+								<tr>
+									<th>Horodatage</th>
+									<th>Capteur</th>
+									<th>Eau</th>
+									<th>Air</th>
+									<th>Pompe</th>
+									<th>Mode</th>
+								</tr>
+							</thead>
+							<tbody>
+								<Show
+									when={visibleHistory().length > 0}
+									fallback={
+										<tr>
+											<td colspan='6' class='text-center text-base-content/60'>
+												Aucune mesure disponible
+											</td>
+										</tr>
+									}
+								>
+									<For each={visibleHistory()}>
+										{(reading) => (
+											<tr>
+												<td>{formatDate(reading.createdAt)}</td>
+												<td class='font-mono'>{reading.id ?? '--'}</td>
+												<td>{formatTemperature(reading.poolTemp)}</td>
+												<td>{formatTemperature(reading.outTemp)}</td>
+												<td>{relayStateLabel(reading.relayState)}</td>
+												<td>{forceStateLabel(reading.forceState)}</td>
+											</tr>
+										)}
+									</For>
+								</Show>
+							</tbody>
+						</table>
 					</div>
 				</div>
 			</section>

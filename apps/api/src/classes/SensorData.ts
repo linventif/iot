@@ -57,3 +57,10 @@ export async function getLatestSensorData() {
 		orderBy: (table, { desc }) => desc(table.createdAt),
 	});
 }
+
+export async function getSensorDataHistory(limit?: number) {
+	return await db.query.sensor_history.findMany({
+		orderBy: (table, { desc }) => desc(table.createdAt),
+		...(limit ? { limit } : {}),
+	});
+}
