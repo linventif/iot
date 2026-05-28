@@ -8,7 +8,7 @@ services:
         environment:
             HOST: 0.0.0.0
             PORT: ${API_CONTAINER_PORT:-4001}
-            API_ALLOWED_ORIGINS: ${API_ALLOWED_ORIGINS:-http://localhost:4001,http://127.0.0.1:4001,http://192.168.1.69:4001,http://192.168.1.97:4001}
+            API_ALLOWED_ORIGINS: ${API_ALLOWED_ORIGINS:-http://localhost:4001,http://127.0.0.1:4001,http://192.168.1.69:4001,http://192.168.1.97:4001,http://192.168.50.71:4001}
             SQLITE_FILE: ${SQLITE_FILE:-/data/iot.sqlite}
             DATABASE_URL: file:${SQLITE_FILE:-/data/iot.sqlite}
         ports:

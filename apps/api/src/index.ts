@@ -9,7 +9,7 @@ const port = Number(process.env.PORT || 4001);
 const hostname = process.env.HOST || '0.0.0.0';
 const allowedOrigins = (
 	process.env.API_ALLOWED_ORIGINS ||
-	'http://localhost:4001,http://127.0.0.1:4001,http://192.168.1.69:4001,http://192.168.1.97:4001'
+	'http://localhost:4001,http://127.0.0.1:4001,http://192.168.1.69:4001,http://192.168.1.97:4001,http://192.168.50.71:4001'
 )
 	.split(',')
 	.map((origin) => origin.trim())
