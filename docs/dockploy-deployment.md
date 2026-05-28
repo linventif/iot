@@ -25,11 +25,22 @@ Ports :
 - `API_PUBLIC_PORT` (par défaut `4001`)
 - `API_CONTAINER_PORT` (par défaut `4001`)
 
+CORS :
+
+- `API_ALLOWED_ORIGINS` (liste séparée par des virgules)
+- Par défaut, l'API autorise `https://pool.linv.dev`, `https://iot.linv.dev`,
+  `https://iot-dev.linv.dev`, les origines locales Vite (`http://localhost:4000`,
+  `http://127.0.0.1:4000`) et les anciennes origines locales/LAN sur le port API.
+- Si `API_ALLOWED_ORIGINS` est défini dans Dockploy, il remplace entièrement cette
+  liste. Ajouter explicitement `https://pool.linv.dev` pour que le site puisse lire
+  les réponses de `https://iot-api.linv.dev`.
+
 ## Déploiement Dockploy
 
 1. Importer le repo.
 2. Choisir le fichier `docker-compose.yml`.
-3. Définir les variables d'environnement (`API_PUBLIC_PORT`, `API_CONTAINER_PORT`, `SQLITE_FILE` si besoin).
+3. Définir les variables d'environnement (`API_PUBLIC_PORT`, `API_CONTAINER_PORT`,
+   `SQLITE_FILE`, `API_ALLOWED_ORIGINS` si besoin).
 4. Déployer.
 
 ## Vérifications rapides

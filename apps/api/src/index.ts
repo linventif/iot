@@ -7,9 +7,20 @@ import { initDatabase } from './db';
 
 const port = Number(process.env.PORT || 4001);
 const hostname = process.env.HOST || '0.0.0.0';
+const defaultAllowedOrigins = [
+	'https://pool.linv.dev',
+	'https://iot.linv.dev',
+	'https://iot-dev.linv.dev',
+	'http://localhost:4000',
+	'http://127.0.0.1:4000',
+	'http://localhost:4001',
+	'http://127.0.0.1:4001',
+	'http://192.168.1.69:4001',
+	'http://192.168.1.97:4001',
+	'http://192.168.50.71:4001',
+];
 const allowedOrigins = (
-	process.env.API_ALLOWED_ORIGINS ||
-	'http://localhost:4001,http://127.0.0.1:4001,http://192.168.1.69:4001,http://192.168.1.97:4001,http://192.168.50.71:4001'
+	process.env.API_ALLOWED_ORIGINS || defaultAllowedOrigins.join(',')
 )
 	.split(',')
 	.map((origin) => origin.trim())
