@@ -5,3 +5,51 @@
 @plugin "@iconify/tailwind4";
 @import 'flyonui/variants.css';
 @source "../node_modules/flyonui/dist/index.js";
+
+.pool-temperature-chart .apexcharts-canvas,
+.pool-temperature-chart .apexcharts-svg,
+.pool-temperature-chart .apexcharts-legend-text,
+.pool-temperature-chart .apexcharts-title-text,
+.pool-temperature-chart .apexcharts-text {
+	color: var(--color-base-content) !important;
+	fill: var(--color-base-content) !important;
+}
+
+.pool-temperature-chart .apexcharts-gridline,
+.pool-temperature-chart .apexcharts-xaxis-tick,
+.pool-temperature-chart .apexcharts-xaxis line,
+.pool-temperature-chart .apexcharts-yaxis line {
+	stroke: var(--color-base-300) !important;
+}
+
+.pool-temperature-chart .apexcharts-tooltip,
+.pool-temperature-chart .apexcharts-xaxistooltip,
+.pool-temperature-chart .apexcharts-yaxistooltip,
+.pool-temperature-chart .apexcharts-menu {
+	background: var(--color-base-100) !important;
+	border-color: var(--color-base-300) !important;
+	color: var(--color-base-content) !important;
+	box-shadow: 0 10px 24px color-mix(in oklab, var(--color-base-300) 45%, transparent) !important;
+}
+
+.pool-temperature-chart .apexcharts-tooltip-title,
+.pool-temperature-chart .apexcharts-menu-item:hover {
+	background: var(--color-base-200) !important;
+	border-color: var(--color-base-300) !important;
+	color: var(--color-base-content) !important;
+}
+
+.pool-temperature-chart .apexcharts-toolbar svg,
+.pool-temperature-chart .apexcharts-menu-icon svg,
+.pool-temperature-chart .apexcharts-reset-icon svg,
+.pool-temperature-chart .apexcharts-selection-icon svg,
+.pool-temperature-chart .apexcharts-zoom-icon svg,
+.pool-temperature-chart .apexcharts-zoomin-icon svg,
+.pool-temperature-chart .apexcharts-zoomout-icon svg,
+.pool-temperature-chart .apexcharts-pan-icon svg {
+	fill: var(--color-base-content) !important;
+}
+
+.pool-temperature-chart .apexcharts-tooltip-marker {
+	border-color: var(--color-base-100) !important;
+}

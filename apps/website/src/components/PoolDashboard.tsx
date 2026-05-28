@@ -134,6 +134,7 @@ export default function PoolDashboard() {
 	]);
 	const temperatureChartOptions = createMemo(() => ({
 		chart: {
+			foreColor: 'var(--color-base-content)',
 			id: 'pool-temperature-history',
 			toolbar: {
 				show: true,
@@ -151,12 +152,12 @@ export default function PoolDashboard() {
 				enabled: true,
 			},
 		},
-		colors: ['#2563eb', '#f97316'],
+		colors: ['var(--color-primary)', 'var(--color-accent)'],
 		dataLabels: {
 			enabled: false,
 		},
 		grid: {
-			borderColor: 'rgba(148, 163, 184, 0.35)',
+			borderColor: 'var(--color-base-300)',
 			strokeDashArray: 4,
 		},
 		legend: {
@@ -171,6 +172,7 @@ export default function PoolDashboard() {
 			width: 3,
 		},
 		tooltip: {
+			theme: false,
 			shared: true,
 			x: {
 				format: 'dd/MM/yyyy HH:mm:ss',
@@ -384,7 +386,7 @@ export default function PoolDashboard() {
 							</p>
 						</div>
 					</div>
-					<div class='min-h-80'>
+					<div class='pool-temperature-chart min-h-80 text-base-content'>
 						<Suspense
 							fallback={
 								<div class='flex min-h-80 items-center justify-center text-base-content/60'>
