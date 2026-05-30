@@ -11,9 +11,11 @@ export const hello = new Elysia()
 	})
 	.get('/api/sensors/history', async ({ query }) => {
 		const limitParam = query.limit?.toString().toLowerCase();
+		const from = parseDateQueryParam(query.from);
+		const to = parseDateQueryParam(query.to);
 
 		if (limitParam === 'all') {
-			return await getSensorDataHistory();
+			return await getSensorDataHistory({ from, to });
 		}
 
 		const parsedLimit = Number.parseInt(limitParam || '50', 10);
@@ -22,8 +24,15 @@ export const hello = new Elysia()
 				? Math.min(parsedLimit, 500)
 				: 50;
 
-		return await getSensorDataHistory(limit);
+		return await getSensorDataHistory({ limit, from, to });
 	});
+
+function parseDateQueryParam(value: unknown): Date | undefined {
+	if (!value) return undefined;
+
+	const date = new Date(value.toString());
+	return Number.isNaN(date.getTime()) ? undefined : date;
+}
 
 // // REST: latest sensor reading
 // .get('/api/sensors/latest', async ({ query }) => {

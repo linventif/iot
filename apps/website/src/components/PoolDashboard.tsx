@@ -16,7 +16,14 @@ import type {
 import { getAPIUrl, getWebSocketUrl } from '../utils/utils';
 
 type SensorReading = Partial<SensorDataBaseType & SensorDataWebSocketType>;
-type HistoryLimit = '10' | '50' | 'all';
+type HistoryRange = {
+	from?: number;
+	to?: number;
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_HISTORY_WINDOW_MS = DAY_MS;
+const HISTORY_EXPAND_PADDING_RATIO = 0.5;
 
 const SolidApexCharts = lazy(() =>
 	import('solid-apexcharts').then((module) => ({
@@ -63,7 +70,11 @@ function timestampOf(value: unknown): number | undefined {
 export default function PoolDashboard() {
 	const [connected, setConnected] = createSignal(false);
 	const [lastLiveUpdate, setLastLiveUpdate] = createSignal<Date | null>(null);
-	const [historyLimit, setHistoryLimit] = createSignal<HistoryLimit>('10');
+	const initialHistoryTo = Date.now();
+	const [historyRange, setHistoryRange] = createSignal<HistoryRange>({
+		from: initialHistoryTo - DEFAULT_HISTORY_WINDOW_MS,
+		to: initialHistoryTo,
+	});
 	const [connectionError, setConnectionError] = createSignal<string | null>(
 		null
 	);
@@ -78,9 +89,19 @@ export default function PoolDashboard() {
 	}
 
 	async function fetchSensorHistory(
-		limit: HistoryLimit
+		range: HistoryRange
 	): Promise<SensorReading[]> {
-		const res = await fetch(`${getAPIUrl()}/sensors/history?limit=${limit}`);
+		const params = new URLSearchParams({ limit: 'all' });
+
+		if (range.from) {
+			params.set('from', new Date(range.from).toISOString());
+		}
+
+		if (range.to) {
+			params.set('to', new Date(range.to).toISOString());
+		}
+
+		const res = await fetch(`${getAPIUrl()}/sensors/history?${params}`);
 		if (!res.ok) throw new Error(res.statusText);
 		return (await res.json()) as SensorReading[];
 	}
@@ -88,7 +109,7 @@ export default function PoolDashboard() {
 	const [sensorData, { refetch, mutate }] =
 		createResource<SensorReading>(fetchLatestSensorData);
 	const [sensorHistory, { refetch: refetchHistory, mutate: mutateHistory }] =
-		createResource(historyLimit, fetchSensorHistory);
+		createResource(historyRange, fetchSensorHistory);
 
 	const poolTemp = createMemo(() => sensorData()?.poolTemp);
 	const outTemp = createMemo(() => sensorData()?.outTemp);
@@ -132,10 +153,70 @@ export default function PoolDashboard() {
 				})),
 		},
 	]);
+	const expandHistoryRangeForViewport = (min: unknown, max: unknown) => {
+		const nextMin = typeof min === 'number' ? min : Number(min);
+		const nextMax = typeof max === 'number' ? max : Number(max);
+
+		if (
+			!Number.isFinite(nextMin) ||
+			!Number.isFinite(nextMax) ||
+			nextMax <= nextMin
+		) {
+			return;
+		}
+
+		const current = historyRange();
+		const currentFrom = current.from ?? nextMin;
+		const currentTo = current.to ?? nextMax;
+
+		if (nextMin >= currentFrom && nextMax <= currentTo) {
+			return;
+		}
+
+		const visibleSpan = nextMax - nextMin;
+		const padding = Math.max(
+			DEFAULT_HISTORY_WINDOW_MS,
+			visibleSpan * HISTORY_EXPAND_PADDING_RATIO
+		);
+
+		setHistoryRange({
+			from:
+				nextMin < currentFrom
+					? Math.max(0, Math.floor(nextMin - padding))
+					: current.from,
+			to: nextMax > currentTo ? Math.ceil(nextMax + padding) : current.to,
+		});
+	};
 	const temperatureChartOptions = createMemo(() => ({
 		chart: {
 			foreColor: 'var(--color-base-content)',
 			id: 'pool-temperature-history',
+			events: {
+				zoomed: (
+					_chart: unknown,
+					options?: { xaxis?: { min?: number; max?: number } }
+				) => {
+					expandHistoryRangeForViewport(
+						options?.xaxis?.min,
+						options?.xaxis?.max
+					);
+				},
+				scrolled: (
+					_chart: unknown,
+					options?: { xaxis?: { min?: number; max?: number } }
+				) => {
+					expandHistoryRangeForViewport(
+						options?.xaxis?.min,
+						options?.xaxis?.max
+					);
+				},
+				beforeResetZoom: () => ({
+					xaxis: {
+						min: Date.now() - DEFAULT_HISTORY_WINDOW_MS,
+						max: Date.now(),
+					},
+				}),
+			},
 			toolbar: {
 				show: true,
 				tools: {
@@ -229,9 +310,13 @@ export default function PoolDashboard() {
 					mutate(reading);
 					mutateHistory((current = []) => {
 						const next = [reading, ...current];
-						return historyLimit() === 'all'
-							? next
-							: next.slice(0, Number(historyLimit()));
+						return current.some(
+							(item) =>
+								timestampOf(item.createdAt) ===
+								timestampOf(reading.createdAt)
+						)
+							? current
+							: next;
 					});
 				}
 			} catch (error) {
@@ -410,18 +495,9 @@ export default function PoolDashboard() {
 				<div class='card-body'>
 					<div class='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
 						<h2 class='card-title'>Détails de la dernière mesure</h2>
-						<select
-							class='select select-sm select-bordered w-full md:w-44'
-							value={historyLimit()}
-							onChange={(event) =>
-								setHistoryLimit(event.currentTarget.value as HistoryLimit)
-							}
-							aria-label='Nombre de mesures affichées'
-						>
-							<option value='10'>10 mesures</option>
-							<option value='50'>50 mesures</option>
-							<option value='all'>Toutes les mesures</option>
-						</select>
+						<span class='text-sm text-base-content/70'>
+							Historique chargé depuis {formatDate(historyRange().from)}
+						</span>
 					</div>
 					<div class='grid grid-cols-1 md:grid-cols-2 gap-3 text-sm'>
 						<div class='flex justify-between gap-4'>

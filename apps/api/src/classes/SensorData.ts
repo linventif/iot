@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { and, desc, gte, lte, type SQL } from 'drizzle-orm';
 import {
 	sensor_history,
 	SensorDataBaseSchema,
@@ -58,9 +59,24 @@ export async function getLatestSensorData() {
 	});
 }
 
-export async function getSensorDataHistory(limit?: number) {
+export async function getSensorDataHistory(options: {
+	limit?: number;
+	from?: Date;
+	to?: Date;
+} = {}) {
+	const conditions: SQL[] = [];
+
+	if (options.from) {
+		conditions.push(gte(sensor_history.createdAt, options.from));
+	}
+
+	if (options.to) {
+		conditions.push(lte(sensor_history.createdAt, options.to));
+	}
+
 	return await db.query.sensor_history.findMany({
-		orderBy: (table, { desc }) => desc(table.createdAt),
-		...(limit ? { limit } : {}),
+		orderBy: desc(sensor_history.createdAt),
+		...(conditions.length ? { where: and(...conditions) } : {}),
+		...(options.limit ? { limit: options.limit } : {}),
 	});
 }
